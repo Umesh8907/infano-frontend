@@ -1,26 +1,83 @@
 @import "tailwindcss";
 
+@theme {
+  --color-primary-50: #fff9f5;
+  --color-primary-100: #fee2d5;
+  --color-primary-500: #f49b82;
+  --color-primary-600: #e8705c;
+
+  --color-accent-500: #d4a373;
+  --color-accent-600: #bc6c25;
+
+  --color-surface: #ffffff;
+
+  --color-bg-peach: #fffafa;
+  --color-text-main: #4a3e3e;
+  --color-text-muted: #8c7e7e;
+  --color-text-dim: #b3a7a7;
+
+  --font-inter: "Inter", sans-serif;
+}
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #fffafa;
+  --foreground: #4a3e3e;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+/* Force light mode colors for the onboarding flow to match references exactly */
+.onboarding-flow-container {
+  --background: #fffafa;
+  --foreground: #4a3e3e;
+  background-color: var(--background);
+  color: var(--foreground);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  border-color: rgba(74, 62, 62, 0.08);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: #fffafa;
+  color: #4a3e3e;
+  font-family: var(--font-inter), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+  margin: 0;
+  background-image: radial-gradient(circle at 10% 20%, rgba(244, 155, 130, 0.05) 0%, transparent 40%),
+    radial-gradient(circle at 90% 80%, rgba(212, 163, 115, 0.05) 0%, transparent 40%);
+}
+
+.onboarding-card {
+  background: white;
+  border-radius: 3rem;
+  border: 1px solid rgba(244, 155, 130, 0.2);
+  box-shadow: 0 20px 60px rgba(74, 62, 62, 0.05);
+}
+
+.glass {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #f49b82, #e8705c);
+  color: white !important;
+  /* Ensure text is white on the button */
+  border-radius: 99px;
+  font-weight: 700;
+  transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(232, 112, 92, 0.4);
+}
+
+.gradient-text {
+  background: linear-gradient(135deg, #a46d5d, #e8705c);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
