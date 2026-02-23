@@ -13,6 +13,7 @@ export default function OnboardingContainer() {
     const [step, setStep] = useState(1);
     const [persona, setPersona] = useState<'parent' | 'student' | null>(null);
     const [method, setMethod] = useState<'activate' | 'purchase'>('activate');
+    const [summaryData, setSummaryData] = useState<any>(null);
 
     const nextStep = () => setStep(prev => prev + 1);
     const prevStep = () => setStep(prev => Math.max(1, prev - 1));
@@ -22,8 +23,9 @@ export default function OnboardingContainer() {
         nextStep();
     };
 
-    const handleStatusComplete = (m: 'activate' | 'purchase') => {
+    const handleStatusComplete = (m: 'activate' | 'purchase', data?: any) => {
         setMethod(m);
+        setSummaryData(data);
         nextStep();
     };
 
@@ -42,7 +44,7 @@ export default function OnboardingContainer() {
                     {step === 1 && <Step1Introduction onContinue={nextStep} />}
                     {step === 2 && <Step2Persona onContinue={handlePersonaSelect} />}
                     {step === 3 && <Step3KitStatus onContinue={handleStatusComplete} />}
-                    {step === 4 && <Step4Success method={method} />}
+                    {step === 4 && <Step4Success method={method} summaryData={summaryData} />}
                 </motion.div>
             </AnimatePresence>
         </div>

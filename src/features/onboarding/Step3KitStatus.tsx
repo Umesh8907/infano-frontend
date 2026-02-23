@@ -10,8 +10,9 @@ import { useRouter } from 'next/navigation';
 import StatusDialog, { DialogType } from '@/components/shared/StatusDialog';
 
 interface Step3KitStatusProps {
-    onContinue: (method: 'activate' | 'purchase') => void;
+    onContinue: (method: 'activate' | 'purchase', data?: any) => void;
 }
+
 
 export default function Step3KitStatus({ onContinue }: Step3KitStatusProps) {
     const [method, setMethod] = useState<'activate' | 'purchase'>('activate');
@@ -91,17 +92,17 @@ export default function Step3KitStatus({ onContinue }: Step3KitStatusProps) {
                 order_id: order.id,
                 handler: async function (response: any) {
                     try {
-                        await api.post('/orders/verify', {
+                        const { data: verifyData } = await api.post('/orders/verify', {
                             razorpay_order_id: response.razorpay_order_id,
                             razorpay_payment_id: response.razorpay_payment_id,
                             razorpay_signature: response.razorpay_signature,
                         });
-                        onContinue('purchase');
-                    } catch (err) {
+                        onContinue('purchase', { orderId: verifyData.order.razorpayOrderId });
+                    } catch (err: any) {
                         setDialog({
                             isOpen: true,
                             title: 'Verification Failed',
-                            message: 'We couldn\'t verify your payment. If the amount was debited, please contact support.',
+                            message: err.response?.data?.message || 'We couldn\'t verify your payment. If the amount was debited, please contact support.',
                             type: 'error'
                         });
                     }
@@ -143,14 +144,14 @@ export default function Step3KitStatus({ onContinue }: Step3KitStatusProps) {
 
         setIsProcessing(true);
         try {
-            await api.post('/kits/activate', {
+            const { data: activationData } = await api.post('/kits/activate', {
                 code: formData.activationCode,
                 fullName: formData.fullName,
                 phone: formData.phone,
                 email: formData.email,
                 address: formData.address,
             });
-            onContinue('activate');
+            onContinue('activate', { code: activationData.code });
         } catch (err: any) {
             const isConflict = err.response?.status === 409;
             setDialog({
@@ -177,7 +178,7 @@ export default function Step3KitStatus({ onContinue }: Step3KitStatusProps) {
             />
 
             <div className="text-center space-y-4">
-                <h2 className="text-4xl font-black text-[#4a3e3e]">Kit Status</h2>
+                <h2 className="text-4xl font-black text-text-main">Kit Status</h2>
                 <p className="text-text-dim font-medium">Let's set up your journey—tell us where you are starting from.</p>
             </div>
 
@@ -186,7 +187,7 @@ export default function Step3KitStatus({ onContinue }: Step3KitStatusProps) {
                 <div className="grid grid-cols-2">
                     <button
                         onClick={() => setMethod('activate')}
-                        className={`p-8 text-left transition-all flex items-center gap-4 ${method === 'activate' ? 'bg-[#fff9f5] border-b-2 border-primary-500' : 'bg-white text-foreground/30'}`}
+                        className={`p-8 text-left transition-all flex items-center gap-4 ${method === 'activate' ? 'bg-primary-50 border-b-2 border-primary-500' : 'bg-white text-foreground/30'}`}
                     >
                         <div className={`w-10 h-10 rounded-full flex items-center justify-center ${method === 'activate' ? 'bg-primary-500 text-white' : 'bg-primary-100/50'}`}>
                             <ShieldCheck className="w-6 h-6" />
@@ -198,13 +199,13 @@ export default function Step3KitStatus({ onContinue }: Step3KitStatusProps) {
                     </button>
                     <button
                         onClick={() => setMethod('purchase')}
-                        className={`p-8 text-left transition-all flex items-center gap-4 ${method === 'purchase' ? 'bg-[#fff9f5] border-b-2 border-primary-100' : 'bg-white text-foreground/30'}`}
+                        className={`p-8 text-left transition-all flex items-center gap-4 ${method === 'purchase' ? 'bg-primary-50 border-b-2 border-primary-100' : 'bg-white text-foreground/30'}`}
                     >
-                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${method === 'purchase' ? 'bg-[#f49b82] text-white' : 'bg-primary-100/50'}`}>
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${method === 'purchase' ? 'bg-primary-500 text-white' : 'bg-primary-100/50'}`}>
                             <Package className="w-6 h-6" />
                         </div>
                         <div>
-                            <h4 className="font-bold text-[#f49b82]">I want to purchase a Kit</h4>
+                            <h4 className="font-bold text-primary-500">I want to purchase a Kit</h4>
                             <p className="text-xs">Get the complete physical kit</p>
                         </div>
                     </button>
@@ -264,7 +265,7 @@ export default function Step3KitStatus({ onContinue }: Step3KitStatusProps) {
                         </div>
                     ) : (
                         <div className="space-y-8">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center bg-[#fff9f5]/50 p-10 rounded-[2.5rem]">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center bg-primary-50/50 p-10 rounded-[2.5rem]">
                                 <div className="w-full aspect-square bg-white rounded-3xl shadow-sm flex items-center justify-center text-8xl border border-primary-100/50">📦</div>
                                 <div className="space-y-4">
                                     <h4 className="text-2xl font-black text-text-main">The Infano Care Kit</h4>
@@ -314,10 +315,10 @@ export default function Step3KitStatus({ onContinue }: Step3KitStatusProps) {
                                     )}
                                 </button>
 
-                                <div className="flex items-center justify-center gap-4 grayscale opacity-40">
-                                    <img src="/api/placeholder/40/20" alt="UPI" />
-                                    <img src="/api/placeholder/40/20" alt="Visa" />
-                                    <img src="/api/placeholder/40/20" alt="Mastercard" />
+                                <div className="flex items-center justify-center gap-4 grayscale opacity-40 font-bold text-xs uppercase tracking-widest text-text-dim">
+                                    <span>UPI</span>
+                                    <span>Cards</span>
+                                    <span>Netbanking</span>
                                 </div>
                             </div>
                         </div>

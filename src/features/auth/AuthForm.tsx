@@ -64,7 +64,7 @@ export default function AuthForm() {
         setIsPending(true);
         try {
             const { data } = await api.post('/auth/verify-otp', { phone, otp });
-            dispatch(setCredentials({ user: data.user, token: data.access_token }));
+            dispatch(setCredentials({ user: data.user, token: data.accessToken }));
             router.push('/dashboard');
         } catch (err: any) {
             setDialog({
