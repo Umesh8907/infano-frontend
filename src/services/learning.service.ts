@@ -23,16 +23,12 @@ export const learningService = {
     },
 
     getProgress: async (journeyId: string): Promise<UserProgress> => {
-        const { data } = await api.get(`/gamification/progress/${journeyId}`);
+        const { data } = await api.get(`/progress/${journeyId}`);
         return data;
     },
 
     completeItem: async (journeyId: string, questId: string, itemId: string) => {
-        const { data } = await api.post('/gamification/complete-item', {
-            journeyId,
-            questId,
-            itemId,
-        });
+        const { data } = await api.post(`/progress/${journeyId}/quests/${questId}/items/${itemId}/complete`);
         return data;
     },
 };

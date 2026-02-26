@@ -8,12 +8,12 @@ import { Loader2 } from 'lucide-react';
 
 export default function QuestPlayerPage() {
     const params = useParams();
-    const questId = params.id as string;
+    const idOrSlug = params.slug as string;
 
     const { data: quest, isLoading } = useQuery({
-        queryKey: ['quest', questId],
-        queryFn: () => learningService.getQuestById(questId),
-        enabled: !!questId,
+        queryKey: ['quest', idOrSlug],
+        queryFn: () => learningService.getQuestById(idOrSlug),
+        enabled: !!idOrSlug,
     });
 
     if (isLoading) {
@@ -29,5 +29,5 @@ export default function QuestPlayerPage() {
 
     if (!quest) return <div>Quest not found</div>;
 
-    return <QuestPlayer quest={quest} />;
+    return <QuestPlayer quest={quest} journeyId={quest.journeyId} />;
 }

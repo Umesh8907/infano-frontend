@@ -24,7 +24,7 @@ export default function JourneyCard({ journey, index }: JourneyCardProps) {
                         alt={journey.title}
                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <div className="absolute inset-0 bg-linear-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
 
                     {/* XP Tag */}
                     <div className="absolute top-4 right-4 glass px-3 py-1 rounded-full text-xs font-bold text-primary-600 flex items-center gap-1">
@@ -55,7 +55,7 @@ export default function JourneyCard({ journey, index }: JourneyCardProps) {
                             <span>Available Now</span>
                         </div>
 
-                        <Link href={`/dashboard/journeys/${journey._id}`}>
+                        <Link href={`/dashboard/journeys/${journey.slug || journey._id}`}>
                             <motion.button
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}

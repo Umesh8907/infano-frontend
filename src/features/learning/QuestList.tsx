@@ -1,7 +1,9 @@
-import { Quest } from '@/types/learning';
+import { Quest, UserProgress } from '@/types/learning';
 import { motion } from 'framer-motion';
-import { Lock, CheckCircle2, Play, Star } from 'lucide-react';
+import { Lock, CheckCircle2, Play, Star, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
+import { useQuery } from '@tanstack/react-query';
+import { learningService } from '@/services/learning.service';
 
 interface QuestListProps {
     quests: Quest[];
@@ -9,6 +11,12 @@ interface QuestListProps {
 }
 
 export default function QuestList({ quests, journeyId }: QuestListProps) {
+    // Fetch live progress
+    const { data: progress } = useQuery({
+        queryKey: ['progress', journeyId],
+        queryFn: () => learningService.getProgress(journeyId),
+    });
+
     // Sorting quests by order just in case
     const sortedQuests = [...quests].sort((a, b) => a.order - b.order);
 
@@ -23,8 +31,17 @@ export default function QuestList({ quests, journeyId }: QuestListProps) {
 
             <div className="grid grid-cols-1 gap-4">
                 {sortedQuests.map((quest, i) => {
-                    const isLocked = false; // logic will come from progress later
-                    const isCompleted = false;
+                    const qProgress = progress?.questProgress?.find(qp => qp.questId === quest._id);
+                    const isCompleted = qProgress?.isCompleted || false;
+                    const hasStarted = (qProgress?.completedItems?.length || 0) > 0;
+
+                    // Locked if not the first quest and the previous quest is not completed
+                    let isLocked = false;
+                    if (i > 0) {
+                        const prevQuest = sortedQuests[i - 1];
+                        const prevQProgress = progress?.questProgress?.find(qp => qp.questId === prevQuest._id);
+                        isLocked = !prevQProgress?.isCompleted;
+                    }
 
                     return (
                         <motion.div
@@ -40,7 +57,15 @@ export default function QuestList({ quests, journeyId }: QuestListProps) {
                                 </div>
 
                                 <div>
-                                    <h4 className="text-xl font-bold mb-1">{quest.title}</h4>
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <h4 className="text-xl font-bold">{quest.title}</h4>
+                                        {isCompleted && (
+                                            <span className="px-2 py-0.5 bg-accent-500 text-white text-[10px] font-black rounded-lg uppercase tracking-widest">Done</span>
+                                        )}
+                                        {!isCompleted && hasStarted && (
+                                            <span className="px-2 py-0.5 bg-primary-500 text-white text-[10px] font-black rounded-lg uppercase tracking-widest animate-pulse">In Progress</span>
+                                        )}
+                                    </div>
                                     <div className="flex items-center gap-4 text-sm text-foreground/40 font-medium">
                                         <span className="flex items-center gap-1">
                                             <Star className="w-3.5 h-3.5 fill-primary-600 text-primary-600" />
@@ -56,14 +81,33 @@ export default function QuestList({ quests, journeyId }: QuestListProps) {
                                 {isLocked ? (
                                     <Lock className="w-6 h-6 text-foreground/20 mr-4" />
                                 ) : (
-                                    <Link href={`/dashboard/quests/${quest._id}`}>
+                                    <Link href={`/dashboard/quests/${quest.slug || quest._id}`}>
                                         <motion.button
                                             whileHover={{ scale: 1.05 }}
                                             whileTap={{ scale: 0.95 }}
-                                            className="px-6 py-3 bg-white border border-primary-500/10 rounded-2xl font-bold text-sm shadow-sm hover:shadow-md hover:bg-primary-500 hover:text-white transition-all flex items-center gap-2"
+                                            className={`px-6 py-3 rounded-2xl font-bold text-sm shadow-sm transition-all flex items-center gap-2 ${isCompleted
+                                                ? 'bg-accent-50 text-accent-600 border border-accent-100 hover:bg-accent-500 hover:text-white'
+                                                : hasStarted
+                                                    ? 'bg-primary-500 text-white shadow-primary-500/20'
+                                                    : 'bg-white border border-primary-500/10 hover:bg-primary-500 hover:text-white'
+                                                }`}
                                         >
-                                            <Play className="w-4 h-4 fill-current" />
-                                            Start Quest
+                                            {isCompleted ? (
+                                                <>
+                                                    <Play className="w-4 h-4 fill-current" />
+                                                    Replay
+                                                </>
+                                            ) : hasStarted ? (
+                                                <>
+                                                    <ArrowRight className="w-4 h-4" />
+                                                    Resume Quest
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Play className="w-4 h-4 fill-current" />
+                                                    Start Quest
+                                                </>
+                                            )}
                                         </motion.button>
                                     </Link>
                                 )}

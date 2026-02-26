@@ -10,17 +10,17 @@ import { motion } from 'framer-motion';
 export default function JourneyDetailsPage() {
     const params = useParams();
     const router = useRouter();
-    const journeyId = params.id as string;
+    const idOrSlug = params.slug as string;
 
     const { data: journey, isLoading: journeyLoading } = useQuery({
-        queryKey: ['journey', journeyId],
-        queryFn: () => learningService.getJourneyById(journeyId),
+        queryKey: ['journey', idOrSlug],
+        queryFn: () => learningService.getJourneyById(idOrSlug),
     });
 
     const { data: quests, isLoading: questsLoading } = useQuery({
-        queryKey: ['quests', journeyId],
-        queryFn: () => learningService.getQuestsByJourney(journeyId),
-        enabled: !!journeyId,
+        queryKey: ['quests', idOrSlug],
+        queryFn: () => learningService.getQuestsByJourney(idOrSlug),
+        enabled: !!idOrSlug,
     });
 
     if (journeyLoading || questsLoading) {
@@ -52,7 +52,7 @@ export default function JourneyDetailsPage() {
                         className="w-full h-full object-cover"
                         alt={journey.title}
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
+                    <div className="absolute inset-0 bg-linear-to-t from-black via-black/40 to-transparent" />
                 </div>
 
                 <div className="relative z-10 text-white space-y-4">
@@ -93,7 +93,7 @@ export default function JourneyDetailsPage() {
             </section>
 
             {/* Quest List */}
-            <QuestList quests={quests || []} journeyId={journeyId} />
+            <QuestList quests={quests || []} journeyId={idOrSlug} />
         </div>
     );
 }

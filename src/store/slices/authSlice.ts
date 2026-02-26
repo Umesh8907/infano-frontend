@@ -7,6 +7,7 @@ interface User {
     fullName?: string;
     role: string;
     isDashboardActive: boolean;
+    isOnboarded?: boolean;
 }
 
 interface AuthState {

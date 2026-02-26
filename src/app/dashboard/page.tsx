@@ -1,12 +1,10 @@
 import { motion } from "framer-motion";
+import DailyCheckInCard from "@/features/dashboard/DailyCheckInCard";
 
 export default function DashboardPage() {
     return (
         <div className="space-y-8">
-            <header>
-                <h1 className="text-4xl font-bold mb-2">Welcome Back, Explorer! 👋</h1>
-                <p className="text-foreground/50">Ready to continue your learning journey?</p>
-            </header>
+            <DailyCheckInCard />
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {/* Placeholder Stats */}
@@ -24,7 +22,7 @@ export default function DashboardPage() {
                 ))}
             </div>
 
-            <div className="glass p-8 rounded-[2rem] min-h-[400px] border-primary-500/5 flex items-center justify-center text-center">
+            <div className="glass p-8 rounded-4xl min-h-[400px] border-primary-500/5 flex items-center justify-center text-center">
                 <div>
                     <div className="w-20 h-20 bg-primary-100 rounded-full flex items-center justify-center text-4xl mb-6 mx-auto">🌱</div>
                     <h2 className="text-2xl font-bold mb-2">Your Current Journey</h2>
