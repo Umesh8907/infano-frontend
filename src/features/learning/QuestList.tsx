@@ -11,11 +11,14 @@ interface QuestListProps {
 }
 
 export default function QuestList({ quests, journeyId }: QuestListProps) {
-    // Fetch live progress
+    // Fetch live progress - always fresh so quest completion status updates immediately on return
     const { data: progress } = useQuery({
         queryKey: ['progress', journeyId],
         queryFn: () => learningService.getProgress(journeyId),
+        staleTime: 0,           // always consider data stale
+        refetchOnWindowFocus: true,  // refetch when user returns to this tab/page
     });
+
 
     // Sorting quests by order just in case
     const sortedQuests = [...quests].sort((a, b) => a.order - b.order);

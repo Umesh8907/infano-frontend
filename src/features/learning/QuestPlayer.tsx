@@ -7,7 +7,7 @@ import { ArrowLeft, ArrowRight, Trophy, Loader2, Sparkles, X, Heart, Save, Play,
 import { useRouter } from 'next/navigation';
 import api from '@/services/api';
 import StatusDialog, { DialogType } from '@/components/shared/StatusDialog';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { learningService } from '@/services/learning.service';
 
@@ -36,6 +36,7 @@ export default function QuestPlayer({ quest, journeyId }: QuestPlayerProps) {
     const [showFeedback, setShowFeedback] = useState(false);
 
     const router = useRouter();
+    const queryClient = useQueryClient();
 
     // Fetch live progress
     const { data: progress, refetch: refetchProgress } = useQuery({
@@ -141,6 +142,8 @@ export default function QuestPlayer({ quest, journeyId }: QuestPlayerProps) {
 
             if (isLast) {
                 setIsFinishing(true);
+                // Invalidate progress cache before navigating back so the journey page shows updated status
+                queryClient.invalidateQueries({ queryKey: ['progress', journeyId] });
                 setTimeout(() => router.back(), 2500);
                 return;
             }
@@ -254,14 +257,11 @@ export default function QuestPlayer({ quest, journeyId }: QuestPlayerProps) {
                             animate={{ opacity: 1, x: 0, scale: 1 }}
                             exit={{ opacity: 0, x: -20, scale: 0.95 }}
                             transition={{ duration: 0.4, ease: "easeOut" }}
-                            className="w-full  onboarding-card p-8 md:p-12 lg:p-14 min-h-[520px] md:min-h-[580px] flex flex-col justify-center relative overflow-hidden"
+                            className="w-full onboarding-card p-8 md:p-10 min-h-[520px] md:min-h-[580px] flex flex-col justify-center relative overflow-hidden"
                         >
-                            {/* Background Accent */}
-                            <div className="absolute top-0 right-0 p-12 opacity-[0.03] pointer-events-none">
-                                <Sparkles className="w-64 h-64" />
-                            </div>
 
-                            <div className="relative z-10 space-y-8">
+
+                            <div className="relative z-10 space-y-8 w-full">
 
 
                                 <h2 className="text-4xl font-black text-text-main leading-tight flex flex-col gap-2">
@@ -275,7 +275,7 @@ export default function QuestPlayer({ quest, journeyId }: QuestPlayerProps) {
                                     )}
                                 </h2>
 
-                                <div className="text-lg text-text-muted leading-relaxed max-w-2xl">
+                                <div className="text-lg text-text-muted leading-relaxed w-full">
                                     {currentItem?.type === 'story_hook' && (
                                         <div className="space-y-6">
                                             <div className="prose prose-lg text-text-muted max-h-[400px] overflow-y-auto pr-4 custom-scrollbar">
@@ -313,7 +313,7 @@ export default function QuestPlayer({ quest, journeyId }: QuestPlayerProps) {
                                     )}
 
                                     {currentItem?.type === 'learning_cards' && (
-                                        <div className="w-full space-y-4 py-2">
+                                        <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-4 py-2">
                                             {(currentItem.content?.cards || []).map((card: any, idx: number) => {
                                                 const isUnlocked = idx <= lastUnlockedCardIndex;
                                                 const isNextToUnlock = idx === lastUnlockedCardIndex + 1;
@@ -325,70 +325,59 @@ export default function QuestPlayer({ quest, journeyId }: QuestPlayerProps) {
                                                         initial={{ opacity: 0, y: 10 }}
                                                         animate={{ opacity: 1, y: 0 }}
                                                         transition={{ delay: idx * 0.07 }}
-                                                        className={`relative rounded-3xl border-2 transition-all duration-500 overflow-hidden ${isUnlocked
-                                                                ? 'bg-white border-primary-200 shadow-lg shadow-primary-500/5'
-                                                                : isNextToUnlock
-                                                                    ? 'bg-white/70 border-primary-200/60 shadow-md'
-                                                                    : 'bg-white/30 border-primary-100/30 opacity-50'
+                                                        className={`relative rounded-3xl border-2 transition-all duration-500 overflow-hidden flex flex-col ${isUnlocked
+                                                            ? 'bg-white border-primary-200 shadow-lg shadow-primary-500/5'
+                                                            : isNextToUnlock
+                                                                ? 'bg-white/70 border-primary-200/60 shadow-md'
+                                                                : 'bg-white/30 border-primary-100/30 opacity-50'
                                                             }`}
                                                     >
-                                                        <div className="p-6 flex items-start gap-5">
-                                                            {/* Icon */}
-                                                            <div className={`w-14 h-14 shrink-0 rounded-2xl flex items-center justify-center transition-all duration-500 ${isUnlocked
-                                                                    ? 'bg-primary-500 text-white'
-                                                                    : 'bg-primary-50 text-primary-300'
-                                                                }`}>
+                                                        {/* Card Header */}
+                                                        <div className={`px-5 pt-5 pb-4 flex items-center gap-4 border-b ${isUnlocked ? 'border-primary-100' : 'border-primary-100/30'}`}>
+                                                            <div className={`w-12 h-12 shrink-0 rounded-2xl flex items-center justify-center transition-all duration-500 ${isUnlocked ? 'bg-primary-500 text-white' : 'bg-primary-50 text-primary-300'}`}>
                                                                 {isUnlocked ? (
                                                                     <>
-                                                                        {idx === 0 && <Heart className="w-7 h-7" />}
-                                                                        {idx === 1 && <Sparkles className="w-7 h-7" />}
-                                                                        {idx === 2 && <Play className="w-7 h-7 fill-current" />}
-                                                                        {idx === 3 && <Info className="w-7 h-7" />}
-                                                                        {idx === 4 && <Droplet className="w-7 h-7" />}
-                                                                        {idx >= 5 && <Check className="w-7 h-7" />}
+                                                                        {idx === 0 && <Heart className="w-6 h-6" />}
+                                                                        {idx === 1 && <Sparkles className="w-6 h-6" />}
+                                                                        {idx === 2 && <Play className="w-6 h-6 fill-current" />}
+                                                                        {idx === 3 && <Info className="w-6 h-6" />}
+                                                                        {idx === 4 && <Droplet className="w-6 h-6" />}
+                                                                        {idx >= 5 && <Check className="w-6 h-6" />}
                                                                     </>
                                                                 ) : (
-                                                                    <Lock className="w-6 h-6" />
+                                                                    <Lock className="w-5 h-5" />
                                                                 )}
                                                             </div>
-
-                                                            {/* Content */}
                                                             <div className="flex-1 min-w-0">
-                                                                <div className="flex items-center justify-between gap-4 mb-2">
-                                                                    <h4 className={`text-lg font-black tracking-tight ${isUnlocked ? 'text-primary-600' : 'text-text-muted'}`}>
-                                                                        {card.title}
-                                                                    </h4>
-                                                                    {isUnlocked && (
-                                                                        <div className="w-7 h-7 bg-accent-500 rounded-full flex items-center justify-center text-white shrink-0">
-                                                                            <Check className="w-4 h-4" />
-                                                                        </div>
-                                                                    )}
-                                                                    {isNextToUnlock && (
-                                                                        <button
-                                                                            onClick={() => handleUnlockCard(idx)}
-                                                                            className="px-4 py-2 bg-primary-500 text-white rounded-xl font-black text-xs uppercase tracking-widest hover:bg-primary-600 active:scale-95 transition-all shadow-md shadow-primary-500/20 flex items-center gap-1.5 shrink-0"
-                                                                        >
-                                                                            Unlock <ArrowRight className="w-3.5 h-3.5" />
-                                                                        </button>
-                                                                    )}
-                                                                </div>
-
-                                                                {isUnlocked ? (
-                                                                    <motion.p
-                                                                        initial={{ opacity: 0 }}
-                                                                        animate={{ opacity: 1 }}
-                                                                        className="text-text-main font-medium leading-relaxed"
-                                                                    >
-                                                                        {card.content}
-                                                                    </motion.p>
-                                                                ) : (
-                                                                    <p className="text-text-dim italic text-sm">
-                                                                        {isNextToUnlock
-                                                                            ? 'Tap Unlock to reveal this card.'
-                                                                            : 'Unlock previous cards to access this.'}
-                                                                    </p>
-                                                                )}
+                                                                <p className="text-[10px] font-black uppercase tracking-widest text-primary-400 mb-0.5">Card {idx + 1}</p>
+                                                                <h4 className={`font-black tracking-tight leading-snug ${isUnlocked ? 'text-primary-700' : 'text-text-muted'}`}>{card.title}</h4>
                                                             </div>
+                                                            {isUnlocked && (
+                                                                <div className="w-7 h-7 bg-accent-500 rounded-full flex items-center justify-center text-white shrink-0">
+                                                                    <Check className="w-4 h-4" />
+                                                                </div>
+                                                            )}
+                                                        </div>
+
+                                                        {/* Card Body */}
+                                                        <div className="px-5 py-4 flex-1 flex flex-col justify-between gap-3">
+                                                            {isUnlocked ? (
+                                                                <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-text-main font-medium leading-relaxed text-sm">
+                                                                    {card.content}
+                                                                </motion.p>
+                                                            ) : (
+                                                                <p className="text-text-dim italic text-sm">
+                                                                    {isNextToUnlock ? 'This card is ready to unlock.' : 'Unlock previous cards to access this one.'}
+                                                                </p>
+                                                            )}
+                                                            {isNextToUnlock && (
+                                                                <button
+                                                                    onClick={() => handleUnlockCard(idx)}
+                                                                    className="w-full py-2.5 bg-primary-500 text-white rounded-xl font-black text-xs uppercase tracking-widest hover:bg-primary-600 active:scale-95 transition-all shadow-md shadow-primary-500/20 flex items-center justify-center gap-2"
+                                                                >
+                                                                    Unlock <ArrowRight className="w-3.5 h-3.5" />
+                                                                </button>
+                                                            )}
                                                         </div>
                                                     </motion.div>
                                                 );
@@ -535,71 +524,6 @@ export default function QuestPlayer({ quest, journeyId }: QuestPlayerProps) {
                         )}
                     </AnimatePresence>
                 </main>
-
-                {/* Right Navigation Panel */}
-                <aside className="w-96 glass-dark bg-white/40 backdrop-blur-xl border-l border-primary-500/10 flex-col hidden lg:flex">
-                    <div className="p-8 border-b border-primary-500/5">
-                        <h3 className="text-xl font-black text-text-main flex items-center gap-3">
-                            <Trophy className="w-5 h-5 text-primary-500" />
-                            Quest Roadmap
-                        </h3>
-                        <p className="text-xs font-bold text-text-dim uppercase tracking-widest mt-2">
-                            Step {currentIndex + 1} of {quest.items.length}
-                        </p>
-                    </div>
-
-                    <div className="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar">
-                        {quest.items.map((item, idx) => {
-                            const itemId = item._id || (item as any).id;
-                            const isPersistentCompleted = currentQuestProgress?.completedItems?.some(ci => ci.itemId === itemId);
-                            const isCurrent = idx === currentIndex;
-                            const isPast = idx < currentIndex || isPersistentCompleted;
-                            const isFuture = idx > currentIndex && !isPersistentCompleted;
-
-                            return (
-                                <button
-                                    key={itemId || idx}
-                                    onClick={() => {
-                                        // Allow jumping back, or jumping to uncompleted but available items
-                                        if (idx <= currentIndex || isPersistentCompleted) setCurrentIndex(idx);
-                                    }}
-                                    disabled={isFuture && !isPersistentCompleted}
-                                    className={`w-full p-4 rounded-2xl flex items-start gap-4 transition-all text-left group ${isCurrent
-                                        ? 'bg-primary-500 text-white shadow-lg shadow-primary-500/20'
-                                        : isPast
-                                            ? 'hover:bg-primary-50 text-text-main'
-                                            : 'opacity-40 cursor-not-allowed text-text-muted'
-                                        }`}
-                                >
-                                    <div className={`mt-1 shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black border-2 ${isCurrent
-                                        ? 'border-white text-white'
-                                        : isPast
-                                            ? 'border-accent-500 bg-accent-500 text-white'
-                                            : 'border-primary-200 text-primary-400'
-                                        }`}>
-                                        {isPast ? <Check className="w-3 h-3" /> : idx + 1}
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <p className={`text-sm font-bold truncate ${isCurrent ? 'text-white' : 'text-text-main'}`}>
-                                            {item.title}
-                                        </p>
-                                        <p className={`text-[10px] uppercase tracking-widest font-black mt-0.5 ${isCurrent ? 'text-white/60' : 'text-text-dim'}`}>
-                                            {item.type.replace('_', ' ')}
-                                        </p>
-                                    </div>
-                                    {isCurrent && <ChevronRight className="w-4 h-4 text-white opacity-40" />}
-                                </button>
-                            );
-                        })}
-                    </div>
-
-                    <div className="p-8 bg-primary-500/5 border-t border-primary-500/5">
-                        <div className="flex items-center justify-between text-xs font-black uppercase tracking-widest text-primary-600">
-                            <span>Quest XP Reward</span>
-                            <span>{quest.xpReward} XP</span>
-                        </div>
-                    </div>
-                </aside>
             </div>
 
             {/* Footer Navigation */}
