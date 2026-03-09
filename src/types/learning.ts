@@ -49,6 +49,8 @@ export interface UserProgress {
     isJourneyCompleted: boolean;
     questProgress: {
         questId: string;
+        lastViewedItemId?: string;
+        lastViewedAt?: string;
         isCompleted: boolean;
         completedItems: {
             itemId: string;
@@ -56,4 +58,16 @@ export interface UserProgress {
             completedAt: string;
         }[];
     }[];
+}
+
+export interface JourneyProgressOverview {
+    journeyId: string;
+    journeySlug: string;
+    journeyTitle: string;
+    journeyDescription: string;
+    thumbnailUrl?: string;
+    totalQuests: number;
+    completedQuests: number;
+    totalXp: number;
+    isJourneyCompleted: boolean;
 }

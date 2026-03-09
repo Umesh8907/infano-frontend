@@ -25,6 +25,9 @@ export default function QuestPlayer({ quest, journeyId }: QuestPlayerProps) {
     const [hasSaved, setHasSaved] = useState(false);
     const [hasResumed, setHasResumed] = useState(false);
 
+    const currentItem = quest.items[currentIndex];
+    const currentItemId = currentItem?._id || (currentItem as any)?.id;
+
     // Learning Cards State
     const [lastUnlockedCardIndex, setLastUnlockedCardIndex] = useState(0);
 
@@ -45,18 +48,36 @@ export default function QuestPlayer({ quest, journeyId }: QuestPlayerProps) {
         return progress?.questProgress?.find(qp => qp.questId === quest._id);
     }, [progress, quest._id]);
 
-    // Resume logic: Jump to first uncompleted item
+    // Resume logic: Prefer last viewed item (backend), otherwise first uncompleted item
     useEffect(() => {
         if (progress && !hasResumed) {
             const completedItemIds = new Set(currentQuestProgress?.completedItems?.map(ci => ci.itemId) || []);
             const firstUncompletedIndex = quest.items.findIndex(item => !completedItemIds.has(item._id || (item as any).id));
 
-            if (firstUncompletedIndex !== -1 && firstUncompletedIndex !== 0) {
+            const lastViewedId = currentQuestProgress?.lastViewedItemId;
+            const lastViewedIndex = lastViewedId
+                ? quest.items.findIndex(item => (item._id || (item as any).id) === lastViewedId)
+                : -1;
+
+            if (lastViewedIndex !== -1) {
+                setCurrentIndex(lastViewedIndex);
+            } else if (firstUncompletedIndex !== -1 && firstUncompletedIndex !== 0) {
                 setCurrentIndex(firstUncompletedIndex);
             }
             setHasResumed(true);
         }
     }, [progress, hasResumed, currentQuestProgress, quest.items]);
+
+    // Persist last viewed activity so reopening resumes exactly where the user left off
+    useEffect(() => {
+        if (!hasResumed) return;
+        if (!currentItemId) return;
+
+        // Fire-and-forget; failing this shouldn't block the UI
+        learningService
+            .setLastViewedItem(journeyId, quest._id, currentItemId)
+            .catch(() => { });
+    }, [hasResumed, currentItemId, journeyId, quest._id]);
 
     // Status Dialog state
     const [dialog, setDialog] = useState<{
@@ -71,7 +92,6 @@ export default function QuestPlayer({ quest, journeyId }: QuestPlayerProps) {
         type: 'info'
     });
 
-    const currentItem = quest.items[currentIndex];
     const isFirst = currentIndex === 0;
     const isLast = currentIndex === quest.items.length - 1;
 
@@ -171,7 +191,7 @@ export default function QuestPlayer({ quest, journeyId }: QuestPlayerProps) {
 
             <div className="flex-1 flex overflow-hidden">
                 {/* Content Area */}
-                <main className="flex-1 relative flex items-center justify-center p-8 overflow-y-auto">
+                <main className="flex-1 relative flex items-center justify-center px-4 md:px-10 lg:px-16 py-6 overflow-y-auto">
                     <AnimatePresence mode="wait">
                         <motion.div
                             key={currentItem?._id || currentIndex}
@@ -179,7 +199,7 @@ export default function QuestPlayer({ quest, journeyId }: QuestPlayerProps) {
                             animate={{ opacity: 1, x: 0, scale: 1 }}
                             exit={{ opacity: 0, x: -20, scale: 0.95 }}
                             transition={{ duration: 0.4, ease: "easeOut" }}
-                            className="w-full max-w-4xl onboarding-card p-12 min-h-[550px] flex flex-col justify-center relative overflow-hidden"
+                            className="w-full  onboarding-card p-8 md:p-12 lg:p-14 min-h-[520px] md:min-h-[580px] flex flex-col justify-center relative overflow-hidden"
                         >
                             {/* Background Accent */}
                             <div className="absolute top-0 right-0 p-12 opacity-[0.03] pointer-events-none">
@@ -238,27 +258,36 @@ export default function QuestPlayer({ quest, journeyId }: QuestPlayerProps) {
                                     )}
 
                                     {currentItem?.type === 'learning_cards' && (
-                                        <div className="space-y-4 w-full max-w-2xl mx-auto py-4">
-                                            {(currentItem.content?.cards || []).map((card: any, idx: number) => {
+                                        <div className="w-full py-4">
+                                            <div className="flex gap-4 overflow-x-auto pb-4 -mx-4 px-4 snap-x snap-mandatory custom-scrollbar justify-start md:justify-center">
+                                                {(currentItem.content?.cards || []).map((card: any, idx: number) => {
                                                 const isUnlocked = idx <= lastUnlockedCardIndex;
                                                 const isNextToUnlock = idx === lastUnlockedCardIndex + 1;
-                                                const isLocked = idx > lastUnlockedCardIndex;
+                                                // Only blur cards that are beyond the next unlockable one
+                                                const isLocked = idx > lastUnlockedCardIndex + 1;
+                                                const isPreviewLocked = !isUnlocked && isNextToUnlock;
 
                                                 return (
                                                     <motion.div
                                                         key={idx}
-                                                        initial={{ opacity: 0, y: 20 }}
+                                                        initial={{ opacity: 0, y: 10 }}
                                                         animate={{ opacity: 1, y: 0 }}
                                                         transition={{ delay: idx * 0.1 }}
-                                                        className={`relative p-8 rounded-4xl border-2 transition-all duration-500 overflow-hidden ${isLocked
+                                                        className={`relative p-10 rounded-3xl md:rounded-[2.5rem] border-2 transition-all duration-500 overflow-hidden shrink-0 w-full max-w-3xl md:max-w-4xl snap-center ${isLocked
                                                             ? 'bg-white/40 border-primary-100/50 opacity-60 grayscale'
-                                                            : 'bg-white border-primary-200 shadow-xl shadow-primary-500/5'
+                                                            : isPreviewLocked
+                                                                ? 'bg-white border-primary-200 shadow-xl shadow-primary-500/10'
+                                                                : 'bg-white border-primary-200 shadow-xl shadow-primary-500/5'
                                                             }`}
                                                     >
                                                         <div className="flex items-start gap-8">
-                                                            <div className={`w-20 h-20 shrink-0 rounded-2xl flex items-center justify-center transition-all duration-500 ${isLocked ? 'bg-primary-50 text-primary-300' : 'bg-primary-500 text-white'
+                                                            <div className={`w-20 h-20 shrink-0 rounded-2xl flex items-center justify-center transition-all duration-500 ${isLocked
+                                                                ? 'bg-primary-50 text-primary-300'
+                                                                : isPreviewLocked
+                                                                    ? 'bg-primary-500/10 text-primary-600 border border-primary-500/10'
+                                                                    : 'bg-primary-500 text-white'
                                                                 }`}>
-                                                                {isLocked ? <Lock className="w-8 h-8" /> : (
+                                                                {(isLocked || isPreviewLocked) ? <Lock className="w-8 h-8" /> : (
                                                                     <>
                                                                         {idx === 0 && <Heart className="w-10 h-10" />}
                                                                         {idx === 1 && <Sparkles className="w-10 h-10" />}
@@ -270,10 +299,10 @@ export default function QuestPlayer({ quest, journeyId }: QuestPlayerProps) {
                                                             </div>
 
                                                             <div className="flex-1 min-w-0">
-                                                                <h4 className={`text-2xl font-black mb-2 tracking-tight ${isLocked ? 'text-text-muted' : 'text-primary-600'}`}>
+                                                                <h4 className={`text-2xl font-black mb-2 tracking-tight ${(isLocked || isPreviewLocked) ? 'text-text-muted' : 'text-primary-600'}`}>
                                                                     {card.title}
                                                                 </h4>
-                                                                {!isLocked ? (
+                                                                {isUnlocked ? (
                                                                     <motion.p
                                                                         initial={{ opacity: 0 }}
                                                                         animate={{ opacity: 1 }}
@@ -283,7 +312,9 @@ export default function QuestPlayer({ quest, journeyId }: QuestPlayerProps) {
                                                                     </motion.p>
                                                                 ) : (
                                                                     <p className="text-text-dim italic font-medium">
-                                                                        Complete previous phases to reveal this secret...
+                                                                        {isPreviewLocked
+                                                                            ? 'Ready to unlock — tap Unlock to reveal it.'
+                                                                            : 'Complete previous phases to reveal this secret...'}
                                                                     </p>
                                                                 )}
                                                             </div>
@@ -298,7 +329,7 @@ export default function QuestPlayer({ quest, journeyId }: QuestPlayerProps) {
                                                                     </button>
                                                                 )}
 
-                                                                {!isLocked && (
+                                                                {isUnlocked && (
                                                                     <div className="w-10 h-10 bg-accent-500 rounded-full flex items-center justify-center text-white shadow-lg shadow-accent-500/20">
                                                                         <Check className="w-5 h-5" />
                                                                     </div>
@@ -311,7 +342,8 @@ export default function QuestPlayer({ quest, journeyId }: QuestPlayerProps) {
                                                         )}
                                                     </motion.div>
                                                 );
-                                            })}
+                                                })}
+                                            </div>
                                         </div>
                                     )}
 

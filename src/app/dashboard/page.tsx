@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import DailyCheckInCard from "@/features/dashboard/DailyCheckInCard";
+import JourneyProgressOverview from "@/features/dashboard/JourneyProgressOverview";
 
 export default function DashboardPage() {
     return (
@@ -22,16 +23,7 @@ export default function DashboardPage() {
                 ))}
             </div>
 
-            <div className="glass p-8 rounded-4xl min-h-[400px] border-primary-500/5 flex items-center justify-center text-center">
-                <div>
-                    <div className="w-20 h-20 bg-primary-100 rounded-full flex items-center justify-center text-4xl mb-6 mx-auto">🌱</div>
-                    <h2 className="text-2xl font-bold mb-2">Your Current Journey</h2>
-                    <p className="text-foreground/40 max-w-sm">You haven't started any learning journeys yet. Let's find something exciting to learn!</p>
-                    <button className="mt-8 px-8 py-3 bg-primary-500 text-white rounded-2xl font-bold shadow-lg shadow-primary-500/20 hover:scale-105 transition-all">
-                        Browse Journeys
-                    </button>
-                </div>
-            </div>
+            <JourneyProgressOverview />
         </div>
     );
 }

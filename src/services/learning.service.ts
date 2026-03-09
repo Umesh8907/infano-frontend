@@ -1,5 +1,5 @@
 import api from './api';
-import { Journey, Quest, UserProgress } from '@/types/learning';
+import { Journey, Quest, UserProgress, JourneyProgressOverview } from '@/types/learning';
 
 export const learningService = {
     getJourneys: async (): Promise<Journey[]> => {
@@ -27,8 +27,18 @@ export const learningService = {
         return data;
     },
 
+    getLatestProgressOverview: async (): Promise<JourneyProgressOverview | null> => {
+        const { data } = await api.get('/progress');
+        return data;
+    },
+
     completeItem: async (journeyId: string, questId: string, itemId: string) => {
         const { data } = await api.post(`/progress/${journeyId}/quests/${questId}/items/${itemId}/complete`);
+        return data;
+    },
+
+    setLastViewedItem: async (journeyId: string, questId: string, itemId: string) => {
+        const { data } = await api.post(`/progress/${journeyId}/quests/${questId}/items/${itemId}/last-viewed`);
         return data;
     },
 };
