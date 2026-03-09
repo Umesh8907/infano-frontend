@@ -231,7 +231,7 @@ export default function QuestPlayer({ quest, journeyId }: QuestPlayerProps) {
             xp += currentItem.xpReward || 0;
         } else if (currentItem?.type === 'learning_cards' && lastUnlockedCardIndex >= (currentItem.content?.cards || []).length - 1) {
             xp += currentItem.xpReward || 0;
-        } else if (currentItem?.type === 'video_activity' || currentItem?.type === 'insight' || currentItem?.type === 'story') {
+        } else if (currentItem?.type === 'video_activity' || currentItem?.type === 'insight' || currentItem?.type === 'story_hook') {
             // These are passive, so if we are viewing them, we consider them pending, except if we already moved past them. But wait, we count previous items fully.
             // When moving to the next item, currentIndex increases, so they get added.
             // For now, let's just add it if they are on it and it's passive, maybe wait for them to click Next.

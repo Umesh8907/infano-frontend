@@ -7,13 +7,23 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useQuery } from '@tanstack/react-query';
+import { onboardingService } from '@/services/onboarding.service';
 
 export default function Topbar() {
-    const { user } = useAppSelector((state) => state.auth);
+    const { user: authUser } = useAppSelector((state) => state.auth);
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
     const dispatch = useAppDispatch();
     const router = useRouter();
+
+    const { data: profile } = useQuery({
+        queryKey: ['userProfile'],
+        queryFn: onboardingService.getUserProfile,
+        staleTime: 5 * 60 * 1000,
+    });
+
+    const user = profile || authUser;
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
