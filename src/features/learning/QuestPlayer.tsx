@@ -10,6 +10,8 @@ import StatusDialog, { DialogType } from '@/components/shared/StatusDialog';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { learningService } from '@/services/learning.service';
+import { Plyr } from 'plyr-react';
+import 'plyr-react/plyr.css';
 
 interface QuestPlayerProps {
     quest: Quest;
@@ -214,6 +216,32 @@ export default function QuestPlayer({ quest, journeyId }: QuestPlayerProps) {
         }
     };
 
+    const earnedXP = useMemo(() => {
+        let xp = 0;
+        // Calculate XP earned from past items
+        for (let i = 0; i < currentIndex; i++) {
+            const item = quest.items[i];
+            xp += item.xpReward || 0;
+        }
+
+        // Add XP if current item is completed in this session
+        if (currentItem?.type === 'knowledge_check' && showFeedback) {
+            xp += currentItem.xpReward || 0;
+        } else if (currentItem?.type === 'mini_challenge' && hasSaved) {
+            xp += currentItem.xpReward || 0;
+        } else if (currentItem?.type === 'learning_cards' && lastUnlockedCardIndex >= (currentItem.content?.cards || []).length - 1) {
+            xp += currentItem.xpReward || 0;
+        } else if (currentItem?.type === 'video_activity' || currentItem?.type === 'insight' || currentItem?.type === 'story') {
+            // These are passive, so if we are viewing them, we consider them pending, except if we already moved past them. But wait, we count previous items fully.
+            // When moving to the next item, currentIndex increases, so they get added.
+            // For now, let's just add it if they are on it and it's passive, maybe wait for them to click Next.
+            // We'll just grant the current one's XP when they click Next (which increments currentIndex).
+        }
+        return xp;
+    }, [currentIndex, quest.items, currentItem, showFeedback, hasSaved, lastUnlockedCardIndex]);
+
+    const totalXP = quest.items.reduce((acc, item) => acc + (item.xpReward || 0), 0);
+
     return (
         <div className="fixed inset-0 bg-bg-peach z-50 flex flex-col onboarding-flow-container text-text-main">
             <StatusDialog
@@ -241,9 +269,19 @@ export default function QuestPlayer({ quest, journeyId }: QuestPlayerProps) {
                     />
                 </div>
 
-                <div className="flex items-center gap-2 glass px-4 py-2 rounded-2xl text-xs font-bold text-primary-600">
+                <div className="flex items-center gap-2 glass px-4 py-2 rounded-2xl text-xs font-bold text-primary-600 transition-all">
                     <Trophy className="w-4 h-4" />
-                    {quest.items.reduce((acc, item) => acc + (item.xpReward || 0), 0)} TOTAL XP
+                    <span>
+                        <motion.span
+                            key={earnedXP}
+                            initial={{ scale: 1.5, color: '#16a34a' }}
+                            animate={{ scale: 1, color: 'inherit' }}
+                            className="inline-block"
+                        >
+                            {earnedXP}
+                        </motion.span>
+                        {' '} / {totalXP} XP
+                    </span>
                 </div>
             </div>
 
@@ -288,17 +326,26 @@ export default function QuestPlayer({ quest, journeyId }: QuestPlayerProps) {
 
                                     {currentItem?.type === 'video_activity' && (
                                         <div className="space-y-6">
-                                            <div className="aspect-video w-full rounded-3xl overflow-hidden bg-black shadow-2xl relative group">
+                                            <div className="w-full rounded-3xl overflow-hidden bg-black shadow-2xl relative group [&_.plyr]:rounded-3xl [&_.plyr]:overflow-hidden">
                                                 {currentItem.content?.videoUrl ? (
-                                                    <iframe
-                                                        src={currentItem.content.videoUrl}
-                                                        title={currentItem.title}
-                                                        className="w-full h-full border-0"
-                                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                                        allowFullScreen
+                                                    <Plyr
+                                                        source={{
+                                                            type: 'video',
+                                                            sources: [
+                                                                {
+                                                                    src: currentItem.content.videoUrl,
+                                                                    provider: currentItem.content.videoUrl.includes('youtube') || currentItem.content.videoUrl.includes('youtu.be') ? 'youtube' : 'html5',
+                                                                }
+                                                            ]
+                                                        }}
+                                                        options={{
+                                                            autoplay: false,
+                                                            controls: ['play-large', 'play', 'progress', 'current-time', 'mute', 'volume', 'captions', 'settings', 'pip', 'airplay', 'fullscreen'],
+                                                            youtube: { noCookie: false, rel: 0, showinfo: 0, iv_load_policy: 3, modestbranding: 1 }
+                                                        }}
                                                     />
                                                 ) : (
-                                                    <div className="w-full h-full flex flex-col items-center justify-center text-white/40">
+                                                    <div className="w-full aspect-video flex flex-col items-center justify-center text-white/40">
                                                         <Play className="w-16 h-16 mb-4 opacity-20" />
                                                         <p className="font-bold">Video Player</p>
                                                     </div>
@@ -524,6 +571,71 @@ export default function QuestPlayer({ quest, journeyId }: QuestPlayerProps) {
                         )}
                     </AnimatePresence>
                 </main>
+
+                {/* Right Navigation Panel */}
+                <aside className="w-96 glass-dark bg-white/40 backdrop-blur-xl border-l border-primary-500/10 flex-col hidden lg:flex">
+                    <div className="p-8 border-b border-primary-500/5">
+                        <h3 className="text-xl font-black text-text-main flex items-center gap-3">
+                            <Trophy className="w-5 h-5 text-primary-500" />
+                            Quest Roadmap
+                        </h3>
+                        <p className="text-xs font-bold text-text-dim uppercase tracking-widest mt-2">
+                            Step {currentIndex + 1} of {quest.items.length}
+                        </p>
+                    </div>
+
+                    <div className="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar">
+                        {quest.items.map((item, idx) => {
+                            const itemId = item._id || (item as any).id;
+                            const isPersistentCompleted = currentQuestProgress?.completedItems?.some(ci => ci.itemId === itemId);
+                            const isCurrent = idx === currentIndex;
+                            const isPast = idx < currentIndex || isPersistentCompleted;
+                            const isFuture = idx > currentIndex && !isPersistentCompleted;
+
+                            return (
+                                <button
+                                    key={itemId || idx}
+                                    onClick={() => {
+                                        // Allow jumping back, or jumping to uncompleted but available items
+                                        if (idx <= currentIndex || isPersistentCompleted) setCurrentIndex(idx);
+                                    }}
+                                    disabled={isFuture && !isPersistentCompleted}
+                                    className={`w-full p-4 rounded-2xl flex items-start gap-4 transition-all text-left group ${isCurrent
+                                        ? 'bg-primary-500 text-white shadow-lg shadow-primary-500/20'
+                                        : isPast
+                                            ? 'hover:bg-primary-50 text-text-main'
+                                            : 'opacity-40 cursor-not-allowed text-text-muted'
+                                        }`}
+                                >
+                                    <div className={`mt-1 shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black border-2 ${isCurrent
+                                        ? 'border-white text-white'
+                                        : isPast
+                                            ? 'border-accent-500 bg-accent-500 text-white'
+                                            : 'border-primary-200 text-primary-400'
+                                        }`}>
+                                        {isPast ? <Check className="w-3 h-3" /> : idx + 1}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <p className={`text-sm font-bold truncate ${isCurrent ? 'text-white' : 'text-text-main'}`}>
+                                            {item.title}
+                                        </p>
+                                        <p className={`text-[10px] uppercase tracking-widest font-black mt-0.5 ${isCurrent ? 'text-white/60' : 'text-text-dim'}`}>
+                                            {item.type.replace('_', ' ')}
+                                        </p>
+                                    </div>
+                                    {isCurrent && <ChevronRight className="w-4 h-4 text-white opacity-40" />}
+                                </button>
+                            );
+                        })}
+                    </div>
+
+                    <div className="p-8 bg-primary-500/5 border-t border-primary-500/5">
+                        <div className="flex items-center justify-between text-xs font-black uppercase tracking-widest text-primary-600">
+                            <span>Quest XP Reward</span>
+                            <span>{quest.xpReward} XP</span>
+                        </div>
+                    </div>
+                </aside>
             </div>
 
             {/* Footer Navigation */}
@@ -551,7 +663,16 @@ export default function QuestPlayer({ quest, journeyId }: QuestPlayerProps) {
                 >
                     {isCompleting ? <Loader2 className="animate-spin w-5 h-5" /> : (
                         <>
-                            {isFirst && currentIndex === 0 && currentItem?.title?.includes('Periods &') ? 'Start My Journey' : (isLast ? 'Finish Adventure' : 'Continue')}
+                            {(() => {
+                                if (isFirst && currentIndex === 0 && currentItem?.title?.includes('Periods &')) return 'Start My Journey';
+                                if (isLast) return 'Finish Quest & Claim Reward';
+                                if (currentItem?.type === 'knowledge_check' && !showFeedback) return 'Select an answer to continue';
+                                if (currentItem?.type === 'knowledge_check' && showFeedback) return 'Next Challenge';
+                                if (currentItem?.type === 'mini_challenge' && !hasSaved) return 'Save Journal to continue';
+                                if (currentItem?.type === 'mini_challenge' && hasSaved) return 'Next Challenge';
+                                if (currentItem?.type === 'learning_cards' && lastUnlockedCardIndex < (currentItem.content?.cards || []).length - 1) return 'Unlock all cards to continue';
+                                return 'Next Activity';
+                            })()}
                             {!isLast && <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />}
                         </>
                     )}
