@@ -37,6 +37,8 @@ const authSlice = createSlice({
             state.token = token;
             if (typeof window !== 'undefined') {
                 localStorage.setItem('token', token);
+                // Also set cookie so Next.js middleware can read it for route protection
+                document.cookie = `token=${token}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
             }
         },
         logout: (state) => {
@@ -44,6 +46,8 @@ const authSlice = createSlice({
             state.token = null;
             if (typeof window !== 'undefined') {
                 localStorage.removeItem('token');
+                // Also clear the cookie
+                document.cookie = 'token=; path=/; max-age=0';
             }
         },
         setLoading: (state, action: PayloadAction<boolean>) => {
