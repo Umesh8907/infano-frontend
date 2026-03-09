@@ -32,8 +32,8 @@ export const learningService = {
         return data;
     },
 
-    completeItem: async (journeyId: string, questId: string, itemId: string) => {
-        const { data } = await api.post(`/progress/${journeyId}/quests/${questId}/items/${itemId}/complete`);
+    completeItem: async (journeyId: string, questId: string, itemId: string, submissionData?: any, isCompleted: boolean = true) => {
+        const { data } = await api.post(`/progress/${journeyId}/quests/${questId}/items/${itemId}/complete`, { submissionData, isCompleted });
         return data;
     },
 

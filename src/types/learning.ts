@@ -56,6 +56,7 @@ export interface UserProgress {
             itemId: string;
             isCompleted: boolean;
             completedAt: string;
+            submissionData?: any;
         }[];
     }[];
 }

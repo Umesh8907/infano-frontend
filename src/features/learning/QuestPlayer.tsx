@@ -77,7 +77,34 @@ export default function QuestPlayer({ quest, journeyId }: QuestPlayerProps) {
         learningService
             .setLastViewedItem(journeyId, quest._id, currentItemId)
             .catch(() => { });
-    }, [hasResumed, currentItemId, journeyId, quest._id]);
+
+        // Restore history if it exists for this item
+        const completedItem = currentQuestProgress?.completedItems?.find(ci => ci.itemId?.toString() === currentItemId?.toString());
+
+        if (completedItem?.submissionData) {
+            const data = completedItem.submissionData;
+            if (currentItem.type === 'knowledge_check' && data.selectedOption !== undefined) {
+                setSelectedOption(data.selectedOption);
+                setShowFeedback(true);
+            } else if (currentItem.type === 'mini_challenge' && data.reflection !== undefined) {
+                setReflection(data.reflection);
+                setHasSaved(true);
+            } else if (currentItem.type === 'learning_cards' && data.lastUnlockedCardIndex !== undefined) {
+                setLastUnlockedCardIndex(data.lastUnlockedCardIndex);
+            }
+        } else {
+            // Reset state if no history
+            if (currentItem.type === 'knowledge_check') {
+                setSelectedOption(null);
+                setShowFeedback(false);
+            } else if (currentItem.type === 'mini_challenge') {
+                setReflection('');
+                setHasSaved(false);
+            } else if (currentItem.type === 'learning_cards') {
+                setLastUnlockedCardIndex(0); // Start with first card unlocked
+            }
+        }
+    }, [hasResumed, currentItemId, journeyId, quest._id, currentQuestProgress, currentItem.type]);
 
     // Status Dialog state
     const [dialog, setDialog] = useState<{
@@ -98,8 +125,18 @@ export default function QuestPlayer({ quest, journeyId }: QuestPlayerProps) {
     const handleNext = async () => {
         setIsCompleting(true);
         try {
-            // Save progress for the current item
-            await learningService.completeItem(journeyId, quest._id, currentItem._id || (currentItem as any).id);
+            // Determine submission data based on step type
+            let submissionData: any = null;
+            if (currentItem.type === 'knowledge_check') {
+                submissionData = { selectedOption };
+            } else if (currentItem.type === 'mini_challenge') {
+                submissionData = { reflection };
+            } else if (currentItem.type === 'learning_cards') {
+                submissionData = { lastUnlockedCardIndex };
+            }
+
+            // Save progress for the current item with submission data
+            await learningService.completeItem(journeyId, quest._id, currentItem._id || (currentItem as any).id, submissionData);
             await refetchProgress();
 
             if (isLast) {
@@ -123,6 +160,24 @@ export default function QuestPlayer({ quest, journeyId }: QuestPlayerProps) {
             });
         } finally {
             setIsCompleting(false);
+        }
+    };
+
+    const handleUnlockCard = async (index: number) => {
+        setLastUnlockedCardIndex(index);
+        try {
+            // Save partial progress
+            await learningService.completeItem(
+                journeyId,
+                quest._id,
+                currentItem._id || (currentItem as any).id,
+                { lastUnlockedCardIndex: index },
+                false // isCompleted = false
+            );
+            // We don't refetch progress here to avoid heavy UI jitter, 
+            // the local state is updated immediately.
+        } catch (err) {
+            console.error('Failed to save partial card progress', err);
         }
     };
 
@@ -258,92 +313,86 @@ export default function QuestPlayer({ quest, journeyId }: QuestPlayerProps) {
                                     )}
 
                                     {currentItem?.type === 'learning_cards' && (
-                                        <div className="w-full py-4">
-                                            <div className="flex gap-4 overflow-x-auto pb-4 -mx-4 px-4 snap-x snap-mandatory custom-scrollbar justify-start md:justify-center">
-                                                {(currentItem.content?.cards || []).map((card: any, idx: number) => {
+                                        <div className="w-full space-y-4 py-2">
+                                            {(currentItem.content?.cards || []).map((card: any, idx: number) => {
                                                 const isUnlocked = idx <= lastUnlockedCardIndex;
                                                 const isNextToUnlock = idx === lastUnlockedCardIndex + 1;
-                                                // Only blur cards that are beyond the next unlockable one
                                                 const isLocked = idx > lastUnlockedCardIndex + 1;
-                                                const isPreviewLocked = !isUnlocked && isNextToUnlock;
 
                                                 return (
                                                     <motion.div
                                                         key={idx}
                                                         initial={{ opacity: 0, y: 10 }}
                                                         animate={{ opacity: 1, y: 0 }}
-                                                        transition={{ delay: idx * 0.1 }}
-                                                        className={`relative p-10 rounded-3xl md:rounded-[2.5rem] border-2 transition-all duration-500 overflow-hidden shrink-0 w-full max-w-3xl md:max-w-4xl snap-center ${isLocked
-                                                            ? 'bg-white/40 border-primary-100/50 opacity-60 grayscale'
-                                                            : isPreviewLocked
-                                                                ? 'bg-white border-primary-200 shadow-xl shadow-primary-500/10'
-                                                                : 'bg-white border-primary-200 shadow-xl shadow-primary-500/5'
+                                                        transition={{ delay: idx * 0.07 }}
+                                                        className={`relative rounded-3xl border-2 transition-all duration-500 overflow-hidden ${isUnlocked
+                                                                ? 'bg-white border-primary-200 shadow-lg shadow-primary-500/5'
+                                                                : isNextToUnlock
+                                                                    ? 'bg-white/70 border-primary-200/60 shadow-md'
+                                                                    : 'bg-white/30 border-primary-100/30 opacity-50'
                                                             }`}
                                                     >
-                                                        <div className="flex items-start gap-8">
-                                                            <div className={`w-20 h-20 shrink-0 rounded-2xl flex items-center justify-center transition-all duration-500 ${isLocked
-                                                                ? 'bg-primary-50 text-primary-300'
-                                                                : isPreviewLocked
-                                                                    ? 'bg-primary-500/10 text-primary-600 border border-primary-500/10'
-                                                                    : 'bg-primary-500 text-white'
+                                                        <div className="p-6 flex items-start gap-5">
+                                                            {/* Icon */}
+                                                            <div className={`w-14 h-14 shrink-0 rounded-2xl flex items-center justify-center transition-all duration-500 ${isUnlocked
+                                                                    ? 'bg-primary-500 text-white'
+                                                                    : 'bg-primary-50 text-primary-300'
                                                                 }`}>
-                                                                {(isLocked || isPreviewLocked) ? <Lock className="w-8 h-8" /> : (
+                                                                {isUnlocked ? (
                                                                     <>
-                                                                        {idx === 0 && <Heart className="w-10 h-10" />}
-                                                                        {idx === 1 && <Sparkles className="w-10 h-10" />}
-                                                                        {idx === 2 && <Play className="w-10 h-10 fill-current" />}
-                                                                        {idx === 3 && <Info className="w-10 h-10" />}
-                                                                        {idx === 4 && <Droplet className="w-10 h-10" />}
+                                                                        {idx === 0 && <Heart className="w-7 h-7" />}
+                                                                        {idx === 1 && <Sparkles className="w-7 h-7" />}
+                                                                        {idx === 2 && <Play className="w-7 h-7 fill-current" />}
+                                                                        {idx === 3 && <Info className="w-7 h-7" />}
+                                                                        {idx === 4 && <Droplet className="w-7 h-7" />}
+                                                                        {idx >= 5 && <Check className="w-7 h-7" />}
                                                                     </>
+                                                                ) : (
+                                                                    <Lock className="w-6 h-6" />
                                                                 )}
                                                             </div>
 
+                                                            {/* Content */}
                                                             <div className="flex-1 min-w-0">
-                                                                <h4 className={`text-2xl font-black mb-2 tracking-tight ${(isLocked || isPreviewLocked) ? 'text-text-muted' : 'text-primary-600'}`}>
-                                                                    {card.title}
-                                                                </h4>
+                                                                <div className="flex items-center justify-between gap-4 mb-2">
+                                                                    <h4 className={`text-lg font-black tracking-tight ${isUnlocked ? 'text-primary-600' : 'text-text-muted'}`}>
+                                                                        {card.title}
+                                                                    </h4>
+                                                                    {isUnlocked && (
+                                                                        <div className="w-7 h-7 bg-accent-500 rounded-full flex items-center justify-center text-white shrink-0">
+                                                                            <Check className="w-4 h-4" />
+                                                                        </div>
+                                                                    )}
+                                                                    {isNextToUnlock && (
+                                                                        <button
+                                                                            onClick={() => handleUnlockCard(idx)}
+                                                                            className="px-4 py-2 bg-primary-500 text-white rounded-xl font-black text-xs uppercase tracking-widest hover:bg-primary-600 active:scale-95 transition-all shadow-md shadow-primary-500/20 flex items-center gap-1.5 shrink-0"
+                                                                        >
+                                                                            Unlock <ArrowRight className="w-3.5 h-3.5" />
+                                                                        </button>
+                                                                    )}
+                                                                </div>
+
                                                                 {isUnlocked ? (
                                                                     <motion.p
                                                                         initial={{ opacity: 0 }}
                                                                         animate={{ opacity: 1 }}
-                                                                        className="text-text-main font-semibold leading-relaxed text-lg"
+                                                                        className="text-text-main font-medium leading-relaxed"
                                                                     >
                                                                         {card.content}
                                                                     </motion.p>
                                                                 ) : (
-                                                                    <p className="text-text-dim italic font-medium">
-                                                                        {isPreviewLocked
-                                                                            ? 'Ready to unlock — tap Unlock to reveal it.'
-                                                                            : 'Complete previous phases to reveal this secret...'}
+                                                                    <p className="text-text-dim italic text-sm">
+                                                                        {isNextToUnlock
+                                                                            ? 'Tap Unlock to reveal this card.'
+                                                                            : 'Unlock previous cards to access this.'}
                                                                     </p>
                                                                 )}
                                                             </div>
-
-                                                            <div className="shrink-0 pt-1">
-                                                                {isNextToUnlock && (
-                                                                    <button
-                                                                        onClick={() => setLastUnlockedCardIndex(idx)}
-                                                                        className="px-6 py-3 bg-primary-500 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-primary-600 active:scale-95 transition-all shadow-lg shadow-primary-500/20 flex items-center gap-2"
-                                                                    >
-                                                                        Unlock <ArrowRight className="w-4 h-4" />
-                                                                    </button>
-                                                                )}
-
-                                                                {isUnlocked && (
-                                                                    <div className="w-10 h-10 bg-accent-500 rounded-full flex items-center justify-center text-white shadow-lg shadow-accent-500/20">
-                                                                        <Check className="w-5 h-5" />
-                                                                    </div>
-                                                                )}
-                                                            </div>
                                                         </div>
-
-                                                        {isLocked && (
-                                                            <div className="absolute inset-0 bg-white/20 backdrop-blur-[1px] z-10 pointer-events-none" />
-                                                        )}
                                                     </motion.div>
                                                 );
-                                                })}
-                                            </div>
+                                            })}
                                         </div>
                                     )}
 
