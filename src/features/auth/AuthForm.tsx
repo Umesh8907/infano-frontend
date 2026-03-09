@@ -150,7 +150,7 @@ export default function AuthForm() {
                             </div>
                             <h2 className="text-3xl font-bold mb-2 text-text-main">Verify Code</h2>
                             <p className="text-text-muted">
-                                We sent a 6-digit code to <span className="font-bold text-text-main">+91 {phone}</span>
+                                We sent a 4-digit code to <span className="font-bold text-text-main">+91 {phone}</span>
                             </p>
                         </div>
 
@@ -160,8 +160,8 @@ export default function AuthForm() {
                                 <input
                                     type="text"
                                     required
-                                    maxLength={6}
-                                    placeholder="000000"
+                                    maxLength={4}
+                                    placeholder="0000"
                                     value={otp}
                                     onChange={(e) => setOtp(e.target.value)}
                                     className="w-full px-4 py-4 rounded-2xl bg-white border border-primary-100 focus:border-accent-600 focus:ring-4 focus:ring-accent-600/5 transition-all outline-none text-center text-3xl font-bold tracking-[0.5em] text-text-main"
@@ -170,7 +170,7 @@ export default function AuthForm() {
 
                             <button
                                 type="submit"
-                                disabled={isPending || otp.length < 6}
+                                disabled={isPending || otp.length < 4}
                                 className="w-full py-4 bg-accent-600 text-white rounded-2xl font-bold text-lg shadow-xl shadow-accent-600/20 hover:bg-accent-700 disabled:opacity-50 disabled:hover:scale-100 active:scale-95 transition-all flex items-center justify-center gap-2 group"
                             >
                                 {isPending ? <Loader2 className="w-5 h-5 animate-spin" /> : (
