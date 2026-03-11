@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, Info, Calendar, Plus, Play, Sparkles, Heart, Zap, Wind, CheckCircle2 } from 'lucide-react';
 import CyclePhaseWheel from '@/features/cycle-tracker/CyclePhaseWheel';
 import LogDailyModal from '@/features/cycle-tracker/LogDailyModal';
+import CycleOnboardingModal from '@/features/cycle-tracker/CycleOnboardingModal';
 import EducationCard from '@/features/cycle-tracker/EducationCard';
 import Link from 'next/link';
 
@@ -14,8 +15,10 @@ export default function CycleTrackerPage() {
     const [loading, setLoading] = useState(true);
     const [education, setEducation] = useState<any[]>([]);
     const [isLogModalOpen, setIsLogModalOpen] = useState(false);
+    const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
     const [todayLog, setTodayLog] = useState<DailyLogData | null>(null);
     const [showSuccess, setShowSuccess] = useState(false);
+    const [isResetting, setIsResetting] = useState(false);
 
     const fetchStatus = useCallback(async () => {
         try {
@@ -47,6 +50,20 @@ export default function CycleTrackerPage() {
 
     const moodLabels: Record<string, string> = { happy: '😊 Happy', calm: '😌 Calm', neutral: '😐 Neutral', low: '😔 Low', stressed: '😫 Stressed' };
 
+    const handleResetData = async () => {
+        if (!window.confirm('Are you sure you want to clear ALL your cycle and logging history? This cannot be undone.')) return;
+        
+        setIsResetting(true);
+        try {
+            await cycleTrackerService.resetData();
+            await fetchStatus();
+        } catch (err) {
+            console.error('Failed to reset data:', err);
+        } finally {
+            setIsResetting(false);
+        }
+    };
+
     useEffect(() => {
         fetchStatus();
     }, [fetchStatus]);
@@ -74,19 +91,19 @@ export default function CycleTrackerPage() {
                     <h1 className="text-4xl font-black text-foreground mb-4">Meet Cycle Companion</h1>
                     <p className="text-xl text-foreground/60 mb-12 max-w-xl mx-auto">
                         Your friendly guide to understanding your body's unique rhythm.
-                        Start by logging your current or last period.
+                        Set up your profile to get personalized predictions.
                     </p>
                     <button
-                        onClick={() => setIsLogModalOpen(true)}
+                        onClick={() => setIsOnboardingOpen(true)}
                         className="px-12 py-5 rounded-3xl bg-primary-600 text-white font-black text-xl shadow-xl shadow-primary-500/20 hover:scale-105 transition-all"
                     >
-                        Log My Period
+                        Get Started
                     </button>
                 </motion.div>
 
-                <LogDailyModal
-                    isOpen={isLogModalOpen}
-                    onClose={() => setIsLogModalOpen(false)}
+                <CycleOnboardingModal
+                    isOpen={isOnboardingOpen}
+                    onClose={() => setIsOnboardingOpen(false)}
                     onSuccess={fetchStatus}
                 />
             </div>
@@ -253,6 +270,22 @@ export default function CycleTrackerPage() {
                 onClose={() => setIsLogModalOpen(false)}
                 onSuccess={handleLogSuccess}
             />
+
+            <CycleOnboardingModal
+                isOpen={isOnboardingOpen}
+                onClose={() => setIsOnboardingOpen(false)}
+                onSuccess={handleLogSuccess}
+            />
+            {/* Reset Data Footer */}
+            <div className="pt-12 border-t border-primary-500/5 text-center">
+                <button 
+                    onClick={handleResetData}
+                    disabled={isResetting}
+                    className="text-[10px] font-black uppercase tracking-widest text-foreground/20 hover:text-red-500 transition-all disabled:opacity-50"
+                >
+                    {isResetting ? 'Resetting...' : 'Reset Tracker Data'}
+                </button>
+            </div>
         </div>
     );
 }

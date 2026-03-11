@@ -65,4 +65,14 @@ export const cycleTrackerService = {
         const response = await api.get('/cycle-tracker/education/all');
         return response.data;
     },
+
+    onboard: async (data: { lastPeriodStart: string; periodLength: number; usualCycleLength?: number }) => {
+        const response = await api.post('/cycle-tracker/onboard', data);
+        return response.data;
+    },
+
+    resetData: async () => {
+        const response = await api.delete('/cycle-tracker/reset');
+        return response.data;
+    },
 };
