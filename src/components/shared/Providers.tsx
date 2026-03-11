@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Provider as ReduxProvider } from 'react-redux';
 import { store } from '@/store';
 import { useState } from 'react';
+import { LazyMotion, domAnimation } from 'framer-motion';
 
 export default function Providers({ children }: { children: React.ReactNode }) {
     const [queryClient] = useState(() => new QueryClient({
@@ -18,7 +19,9 @@ export default function Providers({ children }: { children: React.ReactNode }) {
     return (
         <ReduxProvider store={store}>
             <QueryClientProvider client={queryClient}>
-                {children}
+                <LazyMotion features={domAnimation}>
+                    {children}
+                </LazyMotion>
             </QueryClientProvider>
         </ReduxProvider>
     );

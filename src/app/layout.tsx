@@ -1,12 +1,29 @@
-import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import type { Metadata, Viewport } from "next";
+import { Inter, Nunito_Sans, EB_Garamond } from "next/font/google";
 import "./globals.css";
 import Providers from "@/components/shared/Providers";
+// import MainLayout from "@/components/shared/MainLayout";
 
 const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin"],
 });
+
+const nunitoSans = Nunito_Sans({
+  variable: "--font-nunito",
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700", "800"],
+});
+
+const ebGaramond = EB_Garamond({
+  variable: "--font-termes",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800"],
+});
+
+export const viewport: Viewport = {
+  themeColor: "#f49b82",
+};
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://infano.app'), // Replace with actual domain when ready
@@ -43,7 +60,6 @@ export const metadata: Metadata = {
     shortcut: "/favicon.ico",
     apple: "/apple-touch-icon.png",
   },
-  themeColor: "#f49b82",
 };
 
 import AuthGuard from "@/components/shared/AuthGuard";
@@ -56,12 +72,14 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${inter.variable} antialiased`}
+        className={`${inter.variable} ${nunitoSans.variable} ${ebGaramond.variable} antialiased`}
         suppressHydrationWarning
       >
         <Providers>
           <AuthGuard>
+            {/* <MainLayout> */}
             {children}
+            {/* </MainLayout> */}
           </AuthGuard>
         </Providers>
       </body>

@@ -17,6 +17,8 @@
   --color-text-dim: #b3a7a7;
 
   --font-inter: "Inter", sans-serif;
+  --font-nunito: "Nunito Sans", sans-serif;
+  --font-termes: "EB Garamond", serif;
 }
 
 :root {
@@ -39,7 +41,7 @@
 body {
   background-color: #fffafa;
   color: #4a3e3e;
-  font-family: var(--font-inter), system-ui, sans-serif;
+  font-family: var(--font-nunito), var(--font-inter), system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   min-height: 100vh;
   margin: 0;
@@ -73,6 +75,61 @@ body {
 .btn-primary:hover {
   transform: translateY(-2px);
   box-shadow: 0 10px 20px rgba(232, 112, 92, 0.4);
+}
+
+.btn-purple {
+  background: linear-gradient(70.95deg, #4B1F80 37.17%, #8D70B1 100.38%);
+  color: white !important;
+  width: 304px;
+  height: 53px;
+
+  border-radius: 31px;
+
+  padding: 10px 37px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  white-space: nowrap;
+
+  font-weight: 700;
+
+  transition: all 0.3s ease;
+}
+
+.btn-purple:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(75, 31, 128, 0.35);
+}
+
+.btn-orange {
+  background: #FF94661C;
+  border: 1px solid #E5582B;
+  color: #653E37;
+
+  width: 239px;
+  height: 53px;
+
+  border-radius: 32px;
+
+  padding: 10px 34px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  white-space: nowrap;
+  font-weight: 700;
+
+  transition: all 0.3s ease;
+}
+
+.btn-orange:hover {
+  background: #E5582B;
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(229, 88, 43, 0.3);
 }
 
 .gradient-text {
