@@ -9,15 +9,16 @@ interface PhaseWheelProps {
     totalDays: number;
 }
 
-const phases = [
-    { name: 'Menstrual', color: 'text-primary-600', bg: 'bg-primary-500', icon: Heart, start: 0, end: 5 },
-    { name: 'Follicular', color: 'text-accent-600', bg: 'bg-accent-500', icon: Flower2, start: 5, end: 13 },
-    { name: 'Ovulatory', color: 'text-primary-500', bg: 'bg-primary-400', icon: Sun, start: 13, end: 16 },
-    { name: 'Luteal', color: 'text-accent-700', bg: 'bg-accent-600', icon: Moon, start: 16, end: 28 },
+const phaseDefinitions = [
+    { name: 'Menstrual', color: 'text-primary-600', bg: 'bg-primary-500', icon: Heart, startPct: 0 },
+    { name: 'Follicular', color: 'text-accent-600', bg: 'bg-accent-500', icon: Flower2, startPct: 0.18 },
+    { name: 'Ovulatory', color: 'text-primary-500', bg: 'bg-primary-400', icon: Sun, startPct: 0.45 },
+    { name: 'Luteal', color: 'text-accent-700', bg: 'bg-accent-600', icon: Moon, startPct: 0.55 },
 ];
 
 export default function CyclePhaseWheel({ currentPhase, day, totalDays }: PhaseWheelProps) {
-    const rotation = (day / totalDays) * 360;
+    const circumference = 911;
+    const progress = Math.min(day / totalDays, 1);
 
     return (
         <div className="relative w-80 h-80 mx-auto flex items-center justify-center">
@@ -42,10 +43,9 @@ export default function CyclePhaseWheel({ currentPhase, day, totalDays }: PhaseW
                     stroke="url(#cycleGradient)"
                     strokeWidth="12"
                     strokeLinecap="round"
-                    className="text-primary-600"
-                    strokeDasharray={`${(day / totalDays) * 911} 911`}
-                    initial={{ strokeDasharray: "0 911" }}
-                    animate={{ strokeDasharray: `${(day / totalDays) * 911} 911` }}
+                    strokeDasharray={`${progress * circumference} ${circumference}`}
+                    initial={{ strokeDasharray: `0 ${circumference}` }}
+                    animate={{ strokeDasharray: `${progress * circumference} ${circumference}` }}
                     transition={{ duration: 2, ease: "circOut" }}
                 />
                 <defs>
@@ -89,9 +89,9 @@ export default function CyclePhaseWheel({ currentPhase, day, totalDays }: PhaseW
                 </div>
             </motion.div>
 
-            {/* Interactive Phase Markers */}
-            {phases.map((phase, i) => {
-                const angle = (phase.start / 28) * 360;
+            {/* Interactive Phase Markers — dynamic based on totalDays */}
+            {phaseDefinitions.map((phase, i) => {
+                const angle = phase.startPct * 360;
                 const isActive = currentPhase === phase.name;
 
                 return (

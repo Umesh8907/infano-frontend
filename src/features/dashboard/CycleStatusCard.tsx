@@ -77,13 +77,13 @@ export default function CycleStatusCard() {
                     <span className="text-sm font-bold text-foreground/80">Next Prediction</span>
                 </div>
                 <div className="text-xl font-bold text-foreground">
-                    {status.predictedNextPeriod ? new Date(status.predictedNextPeriod).toLocaleDateString(undefined, { month: 'long', day: 'numeric' }) : 'Calculating...'}
+                    {status.nextPeriodDate ? new Date(status.nextPeriodDate).toLocaleDateString(undefined, { month: 'long', day: 'numeric' }) : 'Calculating...'}
                 </div>
                 <div className="flex items-center gap-2 mt-1">
                     <div className="w-16 h-1 bg-foreground/10 rounded-full overflow-hidden">
                         <div 
                             className="h-full bg-accent-500" 
-                            style={{ width: `${(status.confidence || 0) * 100}%` }}
+                            style={{ width: `${Math.min((status.predictionConfidence || 0) * 100, 100)}%` }}
                         />
                     </div>
                     <span className="text-[10px] font-bold text-foreground/40 uppercase">Confidence</span>

@@ -2,8 +2,8 @@
 
 import { useEffect, useState, useMemo } from 'react';
 import { cycleTrackerService } from '@/services/cycle-tracker.service';
-import { motion } from 'framer-motion';
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Info, Heart, Zap, Wind } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Info, Heart, Zap, Wind, Sparkles, CheckCircle2 } from 'lucide-react';
 import Link from 'next/link';
 
 export default function CycleCalendarPage() {
@@ -12,20 +12,46 @@ export default function CycleCalendarPage() {
     const [isEditMode, setIsEditMode] = useState(false);
     const [data, setData] = useState<any>(null);
     const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
+    const [saveConfirm, setSaveConfirm] = useState<string | null>(null);
+    const [dashboard, setDashboard] = useState<any>(null);
+
+    const fetchData = async () => {
+        try {
+            const [calRes, dashRes] = await Promise.all([
+                cycleTrackerService.getCalendar(),
+                cycleTrackerService.getDashboard(),
+            ]);
+            setData(calRes);
+            setDashboard(dashRes);
+        } catch (err) {
+            console.error('Failed to fetch calendar data:', err);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     useEffect(() => {
-        const fetchCalendarData = async () => {
-            try {
-                const res = await cycleTrackerService.getCalendar();
-                setData(res);
-            } catch (err) {
-                console.error('Failed to fetch calendar data:', err);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchCalendarData();
+        fetchData();
     }, []);
+
+    const handleMarkDate = async (type: 'start' | 'end') => {
+        if (!selectedDate || !data?.cycles?.length) return;
+        const latestCycle = data.cycles[0];
+        setSaving(true);
+        try {
+            await cycleTrackerService.updateCycle(latestCycle._id, {
+                [type === 'start' ? 'startDate' : 'endDate']: selectedDate.toISOString(),
+            });
+            setSaveConfirm(type === 'start' ? 'Period start marked!' : 'Period end marked!');
+            setTimeout(() => setSaveConfirm(null), 2500);
+            await fetchData();
+        } catch (err) {
+            console.error('Failed to update cycle:', err);
+        } finally {
+            setSaving(false);
+        }
+    };
 
     const calendarDays = useMemo(() => {
         const year = viewDate.getFullYear();
@@ -79,6 +105,12 @@ export default function CycleCalendarPage() {
             if (dateStr === start) return 'period-start';
             if (end && dateStr > start && dateStr <= end) return 'period-active';
             if (predicted && dateStr === predicted) return 'period-predicted';
+        }
+        // Check ovulation window from dashboard
+        if (dashboard?.ovulationWindowStart && dashboard?.ovulationWindowEnd) {
+            const ovStart = new Date(dashboard.ovulationWindowStart).toISOString().split('T')[0];
+            const ovEnd = new Date(dashboard.ovulationWindowEnd).toISOString().split('T')[0];
+            if (dateStr >= ovStart && dateStr <= ovEnd) return 'ovulation';
         }
         if (log) return 'logged';
         return null;
@@ -154,7 +186,9 @@ export default function CycleCalendarPage() {
                                         ${status === 'period-start' ? 'bg-primary-500 text-white shadow-lg shadow-primary-500/30 font-black scale-110 z-10' : ''}
                                         ${status === 'period-active' ? 'bg-primary-200 text-primary-900 font-black' : ''}
                                         ${status === 'period-predicted' ? 'border-2 border-dashed border-primary-400 text-primary-600 bg-white' : ''}
+                                        ${status === 'ovulation' ? 'bg-teal-50 text-teal-700 border border-teal-300' : ''}
                                         ${isSelected && !status ? 'ring-4 ring-primary-500/20 bg-primary-100 border border-primary-500/10' : ''}
+                                        ${isSelected ? 'ring-4 ring-primary-500 ring-offset-1' : ''}
                                         ${isToday && !status && !isSelected ? 'ring-2 ring-primary-500 ring-offset-2' : ''}
                                         ${isEditMode && d.day ? 'hover:scale-105 active:scale-95' : ''}
                                     `}
@@ -163,6 +197,9 @@ export default function CycleCalendarPage() {
                                     {d.day}
                                     {status === 'logged' && (
                                         <div className="absolute bottom-2 w-1.5 h-1.5 bg-accent-500 rounded-full" />
+                                    )}
+                                    {status === 'ovulation' && (
+                                        <div className="absolute bottom-2 w-1.5 h-1.5 bg-teal-400 rounded-full" />
                                     )}
                                 </button>
                             );
@@ -176,6 +213,9 @@ export default function CycleCalendarPage() {
                         </div>
                         <div className="flex items-center gap-2 text-xs font-bold text-foreground/60">
                             <div className="w-4 h-4 rounded-md border-2 border-dashed border-primary-400" /> Prediction
+                        </div>
+                        <div className="flex items-center gap-2 text-xs font-bold text-foreground/60">
+                            <div className="w-4 h-4 rounded-md bg-teal-100 border border-teal-300" /> Ovulation Window
                         </div>
                         <div className="flex items-center gap-2 text-xs font-bold text-foreground/60">
                             <div className="w-4 h-4 rounded-md bg-accent-500" /> Daily Log
@@ -243,9 +283,27 @@ export default function CycleCalendarPage() {
                                 {isEditMode && (
                                     <div className="mt-8 pt-8 border-t border-primary-500/10 space-y-4">
                                         <p className="text-[10px] font-black uppercase tracking-widest text-primary-600">Period Management</p>
+                                        {saveConfirm && (
+                                            <div className="flex items-center gap-2 p-3 bg-primary-50 rounded-xl text-primary-700 text-xs font-bold">
+                                                <CheckCircle2 className="w-4 h-4" />
+                                                {saveConfirm}
+                                            </div>
+                                        )}
                                         <div className="grid grid-cols-2 gap-3">
-                                            <button className="py-3 px-4 bg-primary-500 text-white rounded-xl text-xs font-bold shadow-md shadow-primary-500/10">Mark Start</button>
-                                            <button className="py-3 px-4 bg-white border border-primary-500/20 text-primary-600 rounded-xl text-xs font-bold">Mark End</button>
+                                            <button 
+                                                onClick={() => handleMarkDate('start')}
+                                                disabled={saving}
+                                                className="py-3 px-4 bg-primary-500 text-white rounded-xl text-xs font-bold shadow-md shadow-primary-500/10 disabled:opacity-60"
+                                            >
+                                                {saving ? 'Saving...' : 'Mark Start'}
+                                            </button>
+                                            <button 
+                                                onClick={() => handleMarkDate('end')}
+                                                disabled={saving}
+                                                className="py-3 px-4 bg-white border border-primary-500/20 text-primary-600 rounded-xl text-xs font-bold disabled:opacity-60"
+                                            >
+                                                {saving ? 'Saving...' : 'Mark End'}
+                                            </button>
                                         </div>
                                     </div>
                                 )}

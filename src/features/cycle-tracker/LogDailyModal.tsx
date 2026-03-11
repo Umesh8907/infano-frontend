@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Heart, Wind, Zap, Smile, Droplets, Check } from 'lucide-react';
+import { X, Heart, Wind, Zap, Smile, Droplets, Check, CheckCircle2 } from 'lucide-react';
 import { cycleTrackerService, DailyLogData } from '@/services/cycle-tracker.service';
 
 interface LogDailyModalProps {
@@ -32,6 +32,8 @@ const commonSymptoms = [
 
 export default function LogDailyModal({ isOpen, onClose, onSuccess }: LogDailyModalProps) {
     const [step, setStep] = useState(1);
+    const [saving, setSaving] = useState(false);
+    const [saved, setSaved] = useState(false);
     const [data, setData] = useState<DailyLogData>({
         flowLevel: 'none',
         mood: 'neutral',
@@ -40,13 +42,28 @@ export default function LogDailyModal({ isOpen, onClose, onSuccess }: LogDailyMo
         lifestyleTriggers: [],
     });
 
+    // Reset form whenever modal opens
+    useEffect(() => {
+        if (isOpen) {
+            setStep(1);
+            setSaved(false);
+            setSaving(false);
+            setData({ flowLevel: 'none', mood: 'neutral', energy: 5, symptoms: [], lifestyleTriggers: [] });
+        }
+    }, [isOpen]);
+
     const handleSubmit = async () => {
+        setSaving(true);
         try {
             await cycleTrackerService.logDailyData(data);
-            onSuccess();
-            onClose();
+            setSaved(true);
+            setTimeout(() => {
+                onSuccess();
+                onClose();
+            }, 1200);
         } catch (error) {
             console.error('Failed to log data:', error);
+            setSaving(false);
         }
     };
 
@@ -85,10 +102,26 @@ export default function LogDailyModal({ isOpen, onClose, onSuccess }: LogDailyMo
                         </button>
 
                         <div className="mb-10 text-center">
-                            <span className="text-[10px] font-black uppercase tracking-widest text-primary-500 bg-primary-50 px-3 py-1 rounded-full">Step {step} of 3</span>
-                            <h2 className="text-3xl font-black text-foreground mt-4">
-                                {step === 1 ? 'How is your flow?' : step === 2 ? 'How do you feel?' : 'Any symptoms?'}
-                            </h2>
+                            {saved ? (
+                                <motion.div
+                                    initial={{ scale: 0.5, opacity: 0 }}
+                                    animate={{ scale: 1, opacity: 1 }}
+                                    className="flex flex-col items-center gap-4"
+                                >
+                                    <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center text-primary-600">
+                                        <CheckCircle2 className="w-8 h-8" />
+                                    </div>
+                                    <p className="text-xl font-black text-foreground">Saved! ✓</p>
+                                    <p className="text-foreground/50 text-sm">Your log has been recorded.</p>
+                                </motion.div>
+                            ) : (
+                                <>
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-primary-500 bg-primary-50 px-3 py-1 rounded-full">Step {step} of 3</span>
+                                    <h2 className="text-3xl font-black text-foreground mt-4">
+                                        {step === 1 ? 'How is your flow?' : step === 2 ? 'How do you feel?' : 'Any symptoms?'}
+                                    </h2>
+                                </>
+                            )}
                         </div>
 
                         <div className="min-h-[300px]">
@@ -171,7 +204,13 @@ export default function LogDailyModal({ isOpen, onClose, onSuccess }: LogDailyMo
                                     />
                                     <div className="flex gap-4">
                                         <button onClick={() => setStep(2)} className="flex-1 py-4 font-bold text-foreground/40">Back</button>
-                                        <button onClick={handleSubmit} className="flex-1 py-4 bg-primary-600 text-white rounded-2xl font-black shadow-xl shadow-primary-500/30 transition-all hover:scale-105">Save Log</button>
+                                        <button 
+                                            onClick={handleSubmit} 
+                                            disabled={saving}
+                                            className="flex-1 py-4 bg-primary-600 text-white rounded-2xl font-black shadow-xl shadow-primary-500/30 transition-all hover:scale-105 disabled:opacity-70 disabled:cursor-not-allowed"
+                                        >
+                                            {saving ? 'Saving...' : 'Save Log'}
+                                        </button>
                                     </div>
                                 </motion.div>
                             )}

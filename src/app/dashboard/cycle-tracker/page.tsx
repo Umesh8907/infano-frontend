@@ -1,9 +1,9 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { cycleTrackerService, CycleStatus } from '@/services/cycle-tracker.service';
+import { cycleTrackerService, CycleStatus, DailyLogData } from '@/services/cycle-tracker.service';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, Info, Calendar, Plus, Play, Sparkles, Heart, Zap, Wind } from 'lucide-react';
+import { ChevronLeft, Info, Calendar, Plus, Play, Sparkles, Heart, Zap, Wind, CheckCircle2 } from 'lucide-react';
 import CyclePhaseWheel from '@/features/cycle-tracker/CyclePhaseWheel';
 import LogDailyModal from '@/features/cycle-tracker/LogDailyModal';
 import EducationCard from '@/features/cycle-tracker/EducationCard';
@@ -14,19 +14,38 @@ export default function CycleTrackerPage() {
     const [loading, setLoading] = useState(true);
     const [education, setEducation] = useState<any[]>([]);
     const [isLogModalOpen, setIsLogModalOpen] = useState(false);
+    const [todayLog, setTodayLog] = useState<DailyLogData | null>(null);
+    const [showSuccess, setShowSuccess] = useState(false);
 
     const fetchStatus = useCallback(async () => {
         try {
-            const res = await cycleTrackerService.getDashboard();
+            const [res, eduRes] = await Promise.all([
+                cycleTrackerService.getDashboard(),
+                cycleTrackerService.getEducation(),
+            ]);
             setStatus(res);
-            const eduRes = await cycleTrackerService.getEducation();
             setEducation(eduRes);
         } catch (err) {
             console.error('Failed to fetch cycle status:', err);
         } finally {
             setLoading(false);
         }
+        // Fetch today's log independently — 404 just means no log yet
+        try {
+            const logRes = await cycleTrackerService.getTodayLog();
+            setTodayLog(logRes ?? null);
+        } catch {
+            setTodayLog(null);
+        }
     }, []);
+
+    const handleLogSuccess = useCallback(async () => {
+        setShowSuccess(true);
+        setTimeout(() => setShowSuccess(false), 3000);
+        await fetchStatus();
+    }, [fetchStatus]);
+
+    const moodLabels: Record<string, string> = { happy: '😊 Happy', calm: '😌 Calm', neutral: '😐 Neutral', low: '😔 Low', stressed: '😫 Stressed' };
 
     useEffect(() => {
         fetchStatus();
@@ -109,7 +128,7 @@ export default function CycleTrackerPage() {
                     <CyclePhaseWheel
                         currentPhase={status.phase}
                         day={status.cycleDay}
-                        totalDays={28}
+                        totalDays={status.cycleLength || 28}
                     />
                 </div>
 
@@ -154,7 +173,7 @@ export default function CycleTrackerPage() {
                                 <p className="text-sm text-primary-900 font-bold leading-relaxed">{status.tips?.[0] || 'Keep logging to see personalized daily tips!'}</p>
                             </div>
 
-                            <Link href="#" className="flex items-center gap-2 text-primary-600 font-bold text-sm hover:gap-3 transition-all">
+                            <Link href="#education" className="flex items-center gap-2 text-primary-600 font-bold text-sm hover:gap-3 transition-all">
                                 <Play className="w-3 h-3 fill-current" /> Learn more
                             </Link>
 
@@ -180,32 +199,46 @@ export default function CycleTrackerPage() {
                         onClick={() => setIsLogModalOpen(true)}
                         className="text-xs font-black text-primary-600 uppercase tracking-widest px-4 py-2 bg-primary-50 rounded-xl hover:bg-primary-100 transition-all"
                     >
-                        Edit Logs
+                        {todayLog ? 'Edit Logs' : '+ Add Log'}
                     </button>
                 </div>
                 <div className="grid grid-cols-3 gap-4">
-                    {[
-                        { label: 'Mood', icon: Heart, val: 'Not logged' },
-                        { label: 'Energy', icon: Zap, val: 'Not logged' },
-                        { label: 'Symptoms', icon: Wind, val: 'None' }
-                    ].map((item) => (
-                        <div key={item.label} className="bg-white/40 border border-primary-500/5 p-6 rounded-4xl flex flex-col items-center text-center">
-                            <div className="w-12 h-12 bg-primary-100 rounded-2xl flex items-center justify-center text-primary-600 mb-3">
-                                <item.icon className="w-6 h-6" />
-                            </div>
-                            <span className="font-bold text-foreground/40 text-[10px] uppercase tracking-wider">{item.label}</span>
-                            <span className="font-bold text-foreground">{item.val}</span>
+                    <div className="bg-white/40 border border-primary-500/5 p-6 rounded-4xl flex flex-col items-center text-center">
+                        <div className="w-12 h-12 bg-primary-100 rounded-2xl flex items-center justify-center text-primary-600 mb-3">
+                            <Heart className="w-6 h-6" />
                         </div>
-                    ))}
+                        <span className="font-bold text-foreground/40 text-[10px] uppercase tracking-wider">Mood</span>
+                        <span className="font-bold text-foreground mt-1">
+                            {todayLog?.mood ? moodLabels[todayLog.mood] : 'Not logged'}
+                        </span>
+                    </div>
+                    <div className="bg-white/40 border border-primary-500/5 p-6 rounded-4xl flex flex-col items-center text-center">
+                        <div className="w-12 h-12 bg-primary-100 rounded-2xl flex items-center justify-center text-primary-600 mb-3">
+                            <Zap className="w-6 h-6" />
+                        </div>
+                        <span className="font-bold text-foreground/40 text-[10px] uppercase tracking-wider">Energy</span>
+                        <span className="font-bold text-foreground mt-1">
+                            {todayLog?.energy != null ? `${todayLog.energy} / 10` : 'Not logged'}
+                        </span>
+                    </div>
+                    <div className="bg-white/40 border border-primary-500/5 p-6 rounded-4xl flex flex-col items-center text-center">
+                        <div className="w-12 h-12 bg-primary-100 rounded-2xl flex items-center justify-center text-primary-600 mb-3">
+                            <Wind className="w-6 h-6" />
+                        </div>
+                        <span className="font-bold text-foreground/40 text-[10px] uppercase tracking-wider">Symptoms</span>
+                        <span className="font-bold text-foreground mt-1 text-center text-xs leading-snug">
+                            {todayLog?.symptoms && todayLog.symptoms.length > 0 ? todayLog.symptoms.join(', ') : 'None'}
+                        </span>
+                    </div>
                 </div>
             </div>
 
             {/* Education Section */}
             {education.length > 0 && (
-                <div className="space-y-6">
+                <div id="education" className="space-y-6">
                     <div className="flex items-center justify-between">
                         <h2 className="text-2xl font-black text-foreground">Learn & Understand</h2>
-                        <button className="text-sm font-bold text-primary-600">View All</button>
+                        <Link href="/dashboard/cycle-tracker/education" className="text-sm font-bold text-primary-600 hover:underline">View All</Link>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         {education.map(card => (
@@ -218,7 +251,7 @@ export default function CycleTrackerPage() {
             <LogDailyModal
                 isOpen={isLogModalOpen}
                 onClose={() => setIsLogModalOpen(false)}
-                onSuccess={fetchStatus}
+                onSuccess={handleLogSuccess}
             />
         </div>
     );

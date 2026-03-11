@@ -4,11 +4,15 @@ export interface CycleStatus {
     status: 'NO_DATA' | 'ACTIVE';
     cycleDay: number;
     phase: string;
+    cycleLength?: number;
+    periodLength?: number;
     nextPeriodDate?: string;
     predictionConfidence: number;
     reason?: string;
     tips: string[];
     message?: string;
+    ovulationWindowStart?: string;
+    ovulationWindowEnd?: string;
 }
 
 export interface DailyLogData {
@@ -50,5 +54,15 @@ export const cycleTrackerService = {
     updateCycle: async (cycleId: string, updateData: any) => {
         const response = await api.patch(`/cycle-tracker/cycle/${cycleId}`, updateData);
         return response.data;
-    }
+    },
+
+    getTodayLog: async () => {
+        const response = await api.get('/cycle-tracker/today-log');
+        return response.data;
+    },
+
+    getAllEducation: async () => {
+        const response = await api.get('/cycle-tracker/education/all');
+        return response.data;
+    },
 };
