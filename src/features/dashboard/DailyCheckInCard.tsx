@@ -13,7 +13,11 @@ const MOODS = [
     { label: 'Low', emoji: '😔', color: 'bg-indigo-50' },
 ];
 
-export default function DailyCheckInCard() {
+interface DailyCheckInCardProps {
+    onSuccess?: () => void;
+}
+
+export default function DailyCheckInCard({ onSuccess }: DailyCheckInCardProps) {
     const [selectedMood, setSelectedMood] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -43,6 +47,7 @@ export default function DailyCheckInCard() {
             await onboardingService.logMood(mood);
             setSelectedMood(mood);
             setHasCheckedIn(true);
+            onSuccess?.();
         } catch (error) {
             console.error('Failed to log mood:', error);
         } finally {

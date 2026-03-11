@@ -1,6 +1,6 @@
 'use client';
 
-import { LayoutDashboard, BookOpen, Trophy } from 'lucide-react';
+import { LayoutDashboard, BookOpen, Trophy, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import Topbar from '@/components/dashboard/Topbar';
 import { useState, useEffect } from 'react';
@@ -43,6 +43,7 @@ export default function DashboardLayout({
 
     const navItems = [
         { name: 'Overview', icon: LayoutDashboard, href: '/dashboard' },
+        { name: 'Cycle Tracker', icon: Sparkles, href: '/dashboard/cycle-tracker' },
         { name: 'Journeys', icon: BookOpen, href: '/dashboard/journeys' },
         { name: 'Achievements', icon: Trophy, href: '/dashboard/achievements' },
     ];
