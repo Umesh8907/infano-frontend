@@ -44,20 +44,20 @@ export default function CycleTrackerPage() {
     if (!status || status.status === 'NO_DATA') {
         return (
             <div className="max-w-4xl mx-auto py-12 px-6">
-                <motion.div 
+                <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     className="glass p-12 rounded-4xl text-center border-primary-500/10"
                 >
-                    <div className="w-24 h-24 bg-primary-100 rounded-[2rem] flex items-center justify-center mx-auto mb-8 text-primary-600">
+                    <div className="w-24 h-24 bg-primary-100 rounded-4xl flex items-center justify-center mx-auto mb-8 text-primary-600">
                         <Calendar className="w-12 h-12" />
                     </div>
                     <h1 className="text-4xl font-black text-foreground mb-4">Meet Cycle Companion</h1>
                     <p className="text-xl text-foreground/60 mb-12 max-w-xl mx-auto">
-                        Your friendly guide to understanding your body's unique rhythm. 
+                        Your friendly guide to understanding your body's unique rhythm.
                         Start by logging your current or last period.
                     </p>
-                    <button 
+                    <button
                         onClick={() => setIsLogModalOpen(true)}
                         className="px-12 py-5 rounded-3xl bg-primary-600 text-white font-black text-xl shadow-xl shadow-primary-500/20 hover:scale-105 transition-all"
                     >
@@ -65,9 +65,9 @@ export default function CycleTrackerPage() {
                     </button>
                 </motion.div>
 
-                <LogDailyModal 
-                    isOpen={isLogModalOpen} 
-                    onClose={() => setIsLogModalOpen(false)} 
+                <LogDailyModal
+                    isOpen={isLogModalOpen}
+                    onClose={() => setIsLogModalOpen(false)}
                     onSuccess={fetchStatus}
                 />
             </div>
@@ -86,14 +86,14 @@ export default function CycleTrackerPage() {
                     </div>
                 </div>
                 <div className="flex gap-3">
-                     <button className="p-3 rounded-2xl glass hover:text-primary-600 transition-all">
+                    <button className="p-3 rounded-2xl glass hover:text-primary-600 transition-all">
                         <Info className="w-5 h-5" />
                     </button>
                     <Link href="/dashboard/cycle-tracker/calendar" className="p-3 rounded-2xl glass hover:text-primary-600 transition-all flex items-center gap-2">
                         <Calendar className="w-5 h-5" />
                         <span className="hidden md:inline font-bold text-sm">Calendar</span>
                     </Link>
-                    <button 
+                    <button
                         onClick={() => setIsLogModalOpen(true)}
                         className="px-6 py-3 rounded-2xl bg-primary-600 text-white font-bold flex items-center gap-2 hover:bg-primary-700 transition-all shadow-lg shadow-primary-600/10"
                     >
@@ -106,7 +106,7 @@ export default function CycleTrackerPage() {
             {/* Hero Section: Rhythm Wheel & Status */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
                 <div className="flex justify-center order-2 lg:order-1">
-                    <CyclePhaseWheel 
+                    <CyclePhaseWheel
                         currentPhase={status.phase}
                         day={status.cycleDay}
                         totalDays={28}
@@ -116,7 +116,7 @@ export default function CycleTrackerPage() {
                 <div className="space-y-8 order-1 lg:order-2">
                     <div className="glass p-10 rounded-4xl bg-white border-primary-500/10 relative overflow-hidden group">
                         <Sparkles className="absolute -top-6 -right-6 w-32 h-32 text-primary-500/5 group-hover:scale-110 transition-transform" />
-                        
+
                         <div className="space-y-6 relative z-10">
                             <div>
                                 <p className="text-[10px] font-black uppercase tracking-widest text-primary-600 mb-2">Current Status</p>
@@ -176,7 +176,7 @@ export default function CycleTrackerPage() {
             <div className="glass p-10 rounded-[3rem] border-primary-500/10 mb-12">
                 <div className="flex items-center justify-between mb-8">
                     <h3 className="text-2xl font-black text-foreground">Today's Support</h3>
-                    <button 
+                    <button
                         onClick={() => setIsLogModalOpen(true)}
                         className="text-xs font-black text-primary-600 uppercase tracking-widest px-4 py-2 bg-primary-50 rounded-xl hover:bg-primary-100 transition-all"
                     >
@@ -215,9 +215,9 @@ export default function CycleTrackerPage() {
                 </div>
             )}
 
-            <LogDailyModal 
-                isOpen={isLogModalOpen} 
-                onClose={() => setIsLogModalOpen(false)} 
+            <LogDailyModal
+                isOpen={isLogModalOpen}
+                onClose={() => setIsLogModalOpen(false)}
                 onSuccess={fetchStatus}
             />
         </div>
