@@ -25,14 +25,10 @@ export default function DashboardPage() {
 
     return (
         <div className="space-y-12 pb-20">
-            {/* Main Tracker & Daily Action */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-                <div className="lg:col-span-8">
-                    <CycleStatusCard />
-                </div>
-                <div className="lg:col-span-4">
-                    <DailyCheckInCard onSuccess={fetchInsights} />
-                </div>
+            {/* Main Tracker & Daily Action Stacked */}
+            <div className="flex flex-col gap-8 items-stretch">
+                <DailyCheckInCard onSuccess={fetchInsights} />
+                <CycleStatusCard />
             </div>
 
             {/* AI Insights Section */}
